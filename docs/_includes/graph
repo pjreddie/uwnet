@@ -1,0 +1,12 @@
+<figure class="graph">
+    <div id="{{ include.id }}" style="width: 600px; height: 400px;"></div>
+    <script>
+        var elt = document.getElementById('{{ include.id }}');
+        var calculator = Desmos.GraphingCalculator(elt);
+        calculator.setExpression({ id: '{{ include.id }}', latex: '{{ include.tex }}' });
+        calculator.setExpression({ id: '{{ include.id }}2', latex: '{{ include.tex2 }}' });
+        calculator.setExpression({ id: '{{ include.id }}3', latex: '{{ include.tex3 }}' });
+        calculator.setMathBounds({ left: -4, right: 4, bottom: -4, top: 4 });
+    </script>
+    <figcaption>{{ include.caption }}</figcaption>
+</figure>

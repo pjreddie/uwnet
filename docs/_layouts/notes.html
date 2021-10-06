@@ -1,0 +1,41 @@
+---
+layout: default
+---
+{{ content }}
+
+
+<script>
+mermaid.initialize({
+    startOnLoad:false,
+    cloneCssStyles: false,
+    flowchart:{
+        curve:'basis',
+        htmlLabels:true,
+    },
+    theme: 'default',
+    themeVariables:{
+        edgeLabelBackground:'#fff',
+    },
+});
+
+window.onload = function(){
+            mermaid.init();
+
+            window.MathJax = {
+              tex: {
+                macros: {
+                  d: "{\\nabla}",
+                  x: "{\\times}",
+                }
+              }
+            };
+
+            (function () {
+              var script = document.createElement('script');
+              script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+              script.async = true;
+              document.head.appendChild(script);
+            })();
+    
+};
+</script>

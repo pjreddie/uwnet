@@ -1,0 +1,867 @@
+---
+layout: slides
+title: Deep Learning - 10 - Transformers
+permalink: /slides/10
+---
+background-image: url('../figs/title.png')
+
+---
+class: center, middle
+
+# Chapter 10 - Transformers
+
+
+---
+
+# Images are "easy" for computers to handle
+
+- vector of real-valued pixels
+--
+
+- resizing/reshaping doesn't change semantics (much)
+--
+
+- "functions" that can be resampled/interpolated
+
+---
+# How do we represent words?
+
+- one hot encoding?
+    - vector is size of vocabulary
+    - very sparse
+    - "unknown" words need special token
+    - obviuos mispellings get mapped to "unknown"
+--
+- character-level encoding?
+    - each character is one-hot encoding, 256 vector (at least)
+    - word is variable length
+    - need recurrent model, like RNN to handle variable length input
+
+---
+# Want good word representations (embeddings)
+
+Want a dense way to represent words (size of representation less than vocab size)
+
+Should encode some sort of semantics (words with similar meanings are close together...)
+
+Use as feature extraction for ML models on smaller datasets
+
+Can we "train" good word embeddings?
+---
+# Word2vec
+
+{% include chart
+chart='
+graph LR
+    input["\(x_{1\times10000}\)"] --> |"\(W_{10000\times256}\)"| hidden["\(h_{1\times256}\)"]
+    hidden --> |"\(V_{256\times10000}\)"| output["\(y_{1\times10000}\)"]
+'
+caption="Neural network for word2vec training."
+%}
+
+Use a neural network to predict next word from past words
+
+Use internal weights as word "embedding"
+
+.footnote[https://arxiv.org/pdf/1301.3781.pdf]
+
+---
+# Word2vec
+
+{% include chart
+chart='
+graph LR
+    input["\(x_{1\times10000}\)"] --> |"\(W_{10000\times256}\)"| hidden["\(h_{1\times256}\)"]
+    hidden --> |"\(V_{256\times10000}\)"| output["\(y_{1\times10000}\)"]
+'
+caption="Neural network for word2vec training."
+%}
+
+.col50[
+ Example:
+- 10,000 word vocabulary
+- 256-element embedding
+- predict 1 future word from 1 past word
+- one-hot encode input
+- no activation on hidden layer
+- softmax on output
+- \\(W\\) is \\(10000 \times 256\\) matrix, row \\(W_{[i]}\\) embeds word \\(i\\).
+- \\(V\\) is \\(256 \times 10000\\) matrix, col \\(V_{[,j]}\\) embeds word \\(j\\).
+- unnormalize prob of bigram \\(i,j\\) is: \\(\Pr(i,j) = W\_{[i]} \cdot V\_{[,j]} \\)
+]
+
+.col50[
+The Math:
+$$h = xW$$
+$$y = \sigma(hV)$$
+$$y = \sigma(xWV)$$
+]
+
+---
+# Word2vec
+
+{% include chart
+chart='
+graph LR
+    input["\(x_{1\times10000}\)"] --> |"\(W_{10000\times256}\)"| hidden["\(h_{1\times256}\)"]
+    hidden --> |"\(V_{256\times10000}\)"| output["\(y_{1\times10000}\)"]
+'
+caption="Neural network for word2vec training."
+%}
+
+Google trained on 1 million word vocabulary, 1 billion word dataset
+
+The point is not to train a good model but to train good embeddings
+
+Embeddings have some nice properties:
+- add together: closest neighbor of \\(W\_{\text{Czech}} + W\_{\text{currency}}\\) is \\(W\_{\text{koruna}}\\).
+- analogies: closest neighbor of \\((W\_{\text{New York Times}} - W\_{\text{New York}} + W\_{\text{Baltimore}})\\) is \\(W\_{\text{Baltimore Sun}}\\).
+- dense: size of embedding \\( << \\) size of vocabulary
+- transfer learning: use embeddings as input to other models with small training set
+
+So we learn word embeddings from context BUT we have a BIG PROBLEM:
+
+Each word only has one vector, no context when producing embedding of a word!
+
+---
+# ELMo
+
+![An illustrated conversation between Robin Williams and Sesame Street's Elmo. Williams: Hey ELMo, what's the embedding of the word 'stick?'. Elmo: There are multiple possible embeddings! Use it in a sentence. Williams: oh ok. here: let's stick to improvisation in this skit. Elmo: Oh in that case the embedding is: -0.02, -0.16, -0.12, -0.1 ...etc ](../figs/elmoconvo.png)
+
+---
+
+#ELMo
+
+Train LSTM language model "forward", predict next word in sequence: \\(\Pr(w\_k \mid [w\_1, w\_2, \dots w\_{k-1}]) \\)
+
+.height200[![Forward propagation through a 2 layer LTSM network. Input is fed to two LSTM layers which feed downward and also forward in time. Prediction is next word in sequence, i.e. "A" -> "long", "long"->"time", "time"->"ago"...](../figs/forwardrnn.png)]
+
+Also train "backward": \\(\Pr(w\_1 \mid [w\_{k}, w\_{k-1}, \dots w\_2]) \\)
+
+.height200[![Propagation through a 2 layer reverse LTSM network. Input is fed to two LSTM layers which feed downward and also backward in time. Prediction is previous word in sequence, i.e. "A" -> "<start>", "long"->"A", "time"->"long"...](../figs/backwardrnn.png)]
+
+.footnote[https://arxiv.org/pdf/1802.05365.pdf]
+
+---
+ 
+#ELMo
+
+Once networks are trained (on a lot of data) new words can be embedded in context:
+
+- tokenize sentence (usually into words)
+- encode words for LSTMs
+- run bi-directional LSTM
+- extract embedding: concatenate input encoding and output of each LSTM layer
+
+![](../figs/elmo.png)
+
+
+---
+ 
+#Problem with ELMo
+
+LSTMs only have short-term memory (sure it's "long" short-term memory, but it's still short term)
+
+Encoding depends more on nearby words
+
+Consider: 
+
+.center["The sun, which had only been out for less than an hour, moved behind another cloud before **it** finally set."]
+
+How do we embed the word **it**? In this case it refers to the word **sun** but an LSTM model may struggle to remember dependencies for that long.
+
+It would be nice instead to look at the entire sentence (on an entire segment of text) and decide which parts are important
+
+---
+# Attention!
+
+Want a mechanism for our model to decide what parts to focus on, what parts to ignore (sort of like the forget/reset gates in GRUs and LSTMs).
+
+Pretend we are looking up values in a dictionary. We have a set of key, value pairs and a query. We want to match the query to the closest key and return the associated value (i.e. we only want to pay **attention** to the right value and ignore the others).
+
+Attention is one mechanism to focus processing on certain parts of the input. The abstraction is as follows:
+
+- You have a set of key/value pairs \\((K_i, V_i)\\)
+- Given a query \\(Q\\) find the matching key and return that value (soft assignments):
+    - Match score is \\(Q \cdot K_i\\)
+    - Calculate all match scores, normalize
+    - Scale values by their associated score
+    - Add the scaled values element-wise and return vector
+
+---
+# Attention!
+
+In matrices, you have:
+
+- query vector \\(Q\_{[1\x d\_k]}\\)
+- keys matrix, \\(M\\) different keys, each of length \\(d\_k\\): \\(K\_{[M\x d\_k]}\\)
+- values matrix, \\(M\\) different values, length \\(d\_v\\): \\(V\_{[M\x d\_v]}\\)
+
+Matching score given by softmax over queries times keys, has dimension \\(1 \x M \\):
+
+$$ \sigma (Q*K^T)$$
+
+Each value vector is weighted by its score and added together to form output:
+
+$$ \text{Attention}(Q,K,V) = \sigma(Q\*K^T)\*V $$
+
+So the final output has dimension \\(1 \times d_v\\). In we were doing "hard" assignments the softmax would be replaced with a max function and we would select the value associated with the closest matching key to return. Using a softmax gives "soft" assignments to which key matches closest (and hence which value to return)
+
+We can process multiple queries at a time by stacking them, one per row, in \\(Q\\).
+
+---
+# Attention!
+
+{% include chart
+chart='
+graph LR
+    Q["\(Q\)"]
+    K["\(K\)"]
+    V["\(V\)"]
+    Q --> x["\(*\)"]
+    K --> |transpose| x
+    x --> s["\(\sigma\)"]
+    s --> self["Attention\((Q,K,V) = \sigma(Q*K^T)*V\)"]
+    V --> self
+'
+caption="Attention mechanism on queries \(Q\), keys \(K\), and values \(V\)."
+%}
+
+---
+# Self-Attention
+
+We don't have any "outside" information, we want network to decide what parts of input to attend to.
+
+Thus we'll use trained weight matrices to produce our queries, keys, and values from our input, specifically we'll have matrices \\(W^Q, W^K, W^V\\).
+
+Given a input sentence, encode tokens (words) in matrix one per row, if you have `\(n\)` words and encoding of length `\(d_x\)` input is matrix `\(X_{[n,d_x]}\)`
+
+.col50[
+Use matrix `\(W_{[d_x, d_k]}^Q\)` to produce one query per token:
+    
+$$Q_{[n, d_k]} = X * W^Q $$
+
+Use matrix `\(W_{[d_x, d_k]}^K \)` to produce one key per token:
+    
+$$K_{[n, d_k]} = X * W^K$$
+]
+.col50[
+Use matrix `\(W_{[d_x, d_v]}^V\)` to produce one value per token:
+    
+$$V_{[n, d_v]} = X * W^V$$
+
+Calculate attention scores for multiple queries:
+
+`$$\text{Attention}(Q,K,V) = \sigma(Q*K^T)*V $$`
+
+]
+
+.footnote[[vizualization here](http://jalammar.github.io/illustrated-transformer/#self-attention-in-detail)]
+
+---
+
+# Self-Attention
+
+So our final self-attention scores are just our regular attention model run on projections of our input using some weights:
+
+`$$\text{Self-Attention}(X) = \sigma(X*W^Q * [X*W^K]^T) *X*W^V $$`
+
+What is this self-attention matrix output? The matrix is `\([n \times d_v]\)`, each row `\(i\)` is the output of running attention over the generated keys and values using the query for word `\(i\)`.
+
+In other words, we generate a key and value for each word. Than we match keys to values and for each word in the sentence the attention model decides which other words it should pay attention to. Based on those scores the appropriate values are stored in the output for that word.
+
+--
+
+**NOTE**: This is only a way to conceptualize the model to provide some intuition. What is *really* happening is we are projecting inputs around, multiplying them together, applying softmaxes, and eventually we will train the whole thing with gradient descent and learn the right parameters.
+
+
+
+---
+# Self-Attention
+
+{% include chart
+chart='
+graph LR
+    X["\(X\)"] --> |"\(W^Q\)"| Q["\(Q\)"]
+    X["\(X\)"] --> |"\(W^K\)"| K["\(K\)"]
+    X["\(X\)"] --> |"\(W^V\)"| V["\(V\)"]
+    Q --> x["\(*\)"]
+    K --> |transpose| x
+    x --> s["\(\sigma\)"]
+    s --> self["Self-Attention\((X) = \sigma(Q*K^T)*V\)"]
+    V --> self
+'
+caption="Self-attention on input \(X\)."
+%}
+
+
+---
+# NLP With Self-Attention
+
+.col50[
+.height450[
+{% include chart
+chart='
+graph TB
+    A    --> |encode| x1["\(x_1\)"]
+    long --> |encode| x2["\(x_2\)"]
+    time --> |encode| x3["\(x_3\)"]
+    ago  --> |encode| x4["\(x_4\)"]
+    ...  --> |encode| x5["\(x_5\)"]
+    subgraph Encoder
+    x1 --> Q["\(W^Q\)"]
+    x2 --> Q
+    x3 --> Q
+    x4 --> Q
+    x5 --> Q
+    x1 --> K["\(W^K\)"]
+    x2 --> K
+    x3 --> K
+    x4 --> K
+    x5 --> K
+    x1 --> V["\(W^V\)"]
+    x2 --> V
+    x3 --> V
+    x4 --> V
+    x5 --> V
+    subgraph Self-Attention
+    Q --> S["\(\sigma(Q*K^T)*V\)"]
+    K --> S["\(\sigma(Q*K^T)*V\)"]
+    V --> S["\(\sigma(Q*K^T)*V\)"]
+    end
+    S --> h1["\(h_1\)"]
+    S --> h2["\(h_2\)"]
+    S --> h3["\(h_3\)"]
+    S --> h4["\(h_4\)"]
+    S --> h5["\(h_5\)"]
+    h1 --> c1[Connected Layer]
+    h2 --> c2[Connected Layer]
+    h3 --> c3[Connected Layer]
+    h4 --> c4[Connected Layer]
+    h5 --> c5[Connected Layer]
+    end
+    c1 --> y1["\(y_1\)"]
+    c2 --> y2["\(y_2\)"]
+    c3 --> y3["\(y_3\)"]
+    c4 --> y4["\(y_4\)"]
+    c5 --> y5["\(y_5\)"]
+'
+caption="Self-attention on a sentence."
+%}
+]
+]
+.col40[
+- Every word can process info about every other word
+- No "forgetting" over time
+- BUT no notion of order of words!
+]
+---
+# NLP With Self-Attention + Positional Encoding
+
+.col50[
+.height450[
+{% include chart
+chart='
+graph TB
+    subgraph Input
+    A    
+    long 
+    time 
+    ago  
+    ...  
+    end
+
+    A    --> |encode| +1["\(+ p_1\)"]
+    long --> |encode| +2["\(+ p_2\)"]
+    time --> |encode| +3["\(+ p_3\)"]
+    ago  --> |encode| +4["\(+ p_4\)"]
+    ...  --> |encode| +5["\(+ p_5\)"]
+
+
+    +1 -->  x1["\(x_1\)"]
+    +2 -->  x2["\(x_2\)"]
+    +3 -->  x3["\(x_3\)"]
+    +4 -->  x4["\(x_4\)"]
+    +5 -->  x5["\(x_5\)"]
+
+    subgraph Positional Encoding
+    +1
+    +2
+    +3
+    +4
+    +5
+    end
+
+    subgraph Encoder
+
+    x1 --> Q["\(W^Q\)"]
+    x2 --> Q
+    x3 --> Q
+    x4 --> Q
+    x5 --> Q
+    x1 --> K["\(W^K\)"]
+    x2 --> K
+    x3 --> K
+    x4 --> K
+    x5 --> K
+    x1 --> V["\(W^V\)"]
+    x2 --> V
+    x3 --> V
+    x4 --> V
+    x5 --> V
+    subgraph Self-Attention
+    Q --> S["\(\sigma(Q*K^T)*V\)"]
+    K --> S["\(\sigma(Q*K^T)*V\)"]
+    V --> S["\(\sigma(Q*K^T)*V\)"]
+    end
+    S --> h1["\(h_1\)"]
+    S --> h2["\(h_2\)"]
+    S --> h3["\(h_3\)"]
+    S --> h4["\(h_4\)"]
+    S --> h5["\(h_5\)"]
+    h1 --> c1[Connected Layer]
+    h2 --> c2[Connected Layer]
+    h3 --> c3[Connected Layer]
+    h4 --> c4[Connected Layer]
+    h5 --> c5[Connected Layer]
+    end
+    c1 --> y1["\(y_1\)"]
+    c2 --> y2["\(y_2\)"]
+    c3 --> y3["\(y_3\)"]
+    c4 --> y4["\(y_4\)"]
+    c5 --> y5["\(y_5\)"]
+'
+caption="Self-attention with positional encoding."
+%}
+]
+]
+.col40[
+**Positional encoding:**
+- encode words/tokens using some method
+- use function to generate position vectors
+    - nice if can handle arbitrary length
+- add word encoding to position vector
+- network now knows words and order
+]
+
+---
+# Stacked Encoders
+
+
+.col50[
+.height450[
+{% include chart
+chart='
+graph TB
+    Input --> p["Positional Encoding"]
+    p["Positional Encoding"] --> X
+    subgraph Encoder
+    X["\(X\)"] --> |"\(W^Q\)"| Q["\(Q\)"]
+    X["\(X\)"] --> |"\(W^K\)"| K["\(K\)"]
+    X["\(X\)"] --> |"\(W^V\)"| V["\(V\)"]
+    Q --> self["Self-Attention\((X) = \sigma(Q*K^T)*V\)"]
+    K --> self
+    V --> self
+    self --> c["Connected Layer"]
+    end
+    c -->  Y["\(Y\)"]
+
+    subgraph Encoder 2
+    Y["\(Y\)"] --> |"\(W^Q\)"| Q2["\(Q\)"]
+    Y["\(Y\)"] --> |"\(W^K\)"| K2["\(K\)"]
+    Y["\(Y\)"] --> |"\(W^V\)"| V2["\(V\)"]
+    Q2 --> self2["Self-Attention\((Y) = \sigma(Q*K^T)*V\)"]
+    K2 --> self2
+    V2 --> self2
+    self2 --> c2["Connected Layer"]
+    end
+    c2 -->  Z["\(\dots\)"]
+
+'
+caption="Stacked encoders with self-attention."
+%}
+]
+]
+.col50[
+- can stack multiple encoders on top of each other
+- only need positional encoding for first one
+    - why?
+- now that we've encoded our sentence...?
+
+.center[Decode!]
+
+]
+
+---
+# Encoder-Decoder
+
+.col50[
+.height450[
+{% include chart
+chart='
+graph TB
+    A --> p
+    long --> p
+    time --> p
+    ago --> p
+    ... --> p
+    p["Positional Encoding"] --> X
+    subgraph Encoder
+    X["\(X\)"] --> |"\(W^Q\)"| Q["\(Q\)"]
+    X["\(X\)"] --> |"\(W^K\)"| K["\(K\)"]
+    X["\(X\)"] --> |"\(W^V\)"| V["\(V\)"]
+    Q --> self["Self-Attention\((X) = \sigma(Q*K^T)*V\)"]
+    K --> self
+    V --> self
+    self --> c["Connected Layer"]
+    end
+    c -->  Y["\(Y\)"]
+
+    start["[start]"] --> pd["Positional Encoding"]
+
+    pd --> |"\(W^Q\)"| Q2["\(Q\)"]
+    subgraph Decoder
+    Y["\(Y\)"] --> |"\(W^K\)"| K2["\(K\)"]
+    Y["\(Y\)"] --> |"\(W^V\)"| V2["\(V\)"]
+    Q2 --> self2["Encoder/Decoder Attention\((Y,Q) = \sigma(Q*K^T)*V\)"]
+    K2 --> self2
+    V2 --> self2
+    self2 --> c2["Connected Layer"]
+    end
+    c2 --> |decode| Z["Hace"]
+
+'
+caption="Stacked encoders with self-attention."
+%}
+]
+]
+.col50[
+- use output of encoder as the "dictionary"
+    - encoder creates key/value pairs
+- queries come from feeding output of sentence back to itself
+- start with some "[start]" token/vector
+- generate!
+]
+---
+# Encoder-Decoder
+
+.col50[
+.height450[
+{% include chart
+chart='
+graph TB
+    A --> p
+    long --> p
+    time --> p
+    ago --> p
+    ... --> p
+    p["Positional Encoding"] --> X
+    subgraph Encoder
+    X["\(X\)"] --> |"\(W^Q\)"| Q["\(Q\)"]
+    X["\(X\)"] --> |"\(W^K\)"| K["\(K\)"]
+    X["\(X\)"] --> |"\(W^V\)"| V["\(V\)"]
+    Q --> self["Self-Attention\((X) = \sigma(Q*K^T)*V\)"]
+    K --> self
+    V --> self
+    self --> c["Connected Layer"]
+    end
+    c -->  Y["\(Y\)"]
+
+    start["[start]"] --> pd["Positional Encoding"]
+    hace["Hace"] --> pd["Positional Encoding"]
+
+    pd --> |"\(W^Q\)"| Q2["\(Q\)"]
+    subgraph Decoder
+    Y["\(Y\)"] --> |"\(W^K\)"| K2["\(K\)"]
+    Y["\(Y\)"] --> |"\(W^V\)"| V2["\(V\)"]
+    Q2 --> self2["Encoder/Decoder Attention\((Y,Q) = \sigma(Q*K^T)*V\)"]
+    K2 --> self2
+    V2 --> self2
+    self2 --> c2["Connected Layer"]
+    end
+    c2 --> |decode| Z["mucho"]
+
+'
+caption="Stacked encoders with self-attention."
+%}
+]
+]
+.col50[
+- use output of encoder as the "dictionary"
+    - encoder creates key/value pairs
+- queries come from feeding output of sentence back to itself
+- start with some "[start]" token/vector
+- generate!
+]
+---
+# Encoder-Decoder
+
+.col50[
+.height450[
+{% include chart
+chart='
+graph TB
+    A --> p
+    long --> p
+    time --> p
+    ago --> p
+    ... --> p
+    p["Positional Encoding"] --> X
+    subgraph Encoder
+    X["\(X\)"] --> |"\(W^Q\)"| Q["\(Q\)"]
+    X["\(X\)"] --> |"\(W^K\)"| K["\(K\)"]
+    X["\(X\)"] --> |"\(W^V\)"| V["\(V\)"]
+    Q --> self["Self-Attention\((X) = \sigma(Q*K^T)*V\)"]
+    K --> self
+    V --> self
+    self --> c["Connected Layer"]
+    end
+    c -->  Y["\(Y\)"]
+
+    start["[start]"] --> pd["Positional Encoding"]
+    hace["Hace"] --> pd["Positional Encoding"]
+    mucho["mucho"] --> pd["Positional Encoding"]
+
+    pd --> |"\(W^Q\)"| Q2["\(Q\)"]
+    subgraph Decoder
+    Y["\(Y\)"] --> |"\(W^K\)"| K2["\(K\)"]
+    Y["\(Y\)"] --> |"\(W^V\)"| V2["\(V\)"]
+    Q2 --> self2["Encoder/Decoder Attention\((Y,Q) = \sigma(Q*K^T)*V\)"]
+    K2 --> self2
+    V2 --> self2
+    self2 --> c2["Connected Layer"]
+    end
+    c2 --> |decode| Z["tiempo"]
+
+'
+caption="Stacked encoders with self-attention."
+%}
+]
+]
+.col50[
+- use output of encoder as the "dictionary"
+    - encoder creates key/value pairs
+- queries come from feeding output of sentence back to itself
+- start with some "[start]" token/vector
+- generate!
+]
+---
+# Encoder-Decoder
+
+.col50[
+.height450[
+{% include chart
+chart='
+graph TB
+    A --> p
+    long --> p
+    time --> p
+    ago --> p
+    ... --> p
+    p["Positional Encoding"] --> X
+    subgraph Encoder
+    X["\(X\)"] --> |"\(W^Q\)"| Q["\(Q\)"]
+    X["\(X\)"] --> |"\(W^K\)"| K["\(K\)"]
+    X["\(X\)"] --> |"\(W^V\)"| V["\(V\)"]
+    Q --> self["Self-Attention\((X) = \sigma(Q*K^T)*V\)"]
+    K --> self
+    V --> self
+    self --> c["Connected Layer"]
+    end
+    c -->  Y["\(Y\)"]
+
+    start["[start]"] --> pd["Positional Encoding"]
+    hace --> pd["Positional Encoding"]
+    mucho --> pd["Positional Encoding"]
+    tiempo --> pd["Positional Encoding"]
+
+    pd --> |"\(W^Q\)"| Q2["\(Q\)"]
+    subgraph Decoder
+    Y["\(Y\)"] --> |"\(W^K\)"| K2["\(K\)"]
+    Y["\(Y\)"] --> |"\(W^V\)"| V2["\(V\)"]
+    Q2 --> self2["Encoder/Decoder Attention\((Y,Q) = \sigma(Q*K^T)*V\)"]
+    K2 --> self2
+    V2 --> self2
+    self2 --> c2["Connected Layer"]
+    end
+    c2 --> |decode| Z["..."]
+
+'
+caption="Stacked encoders with self-attention."
+%}
+]
+]
+.col50[
+- use output of encoder as the "dictionary"
+    - encoder creates key/value pairs
+- queries come from feeding output of sentence back to itself
+- start with some "[start]" token/vector
+- generate!
+]
+---
+# Encoder-Decoder
+
+.col50[
+.height450[
+{% include chart
+chart='
+graph TB
+    A --> p
+    long --> p
+    time --> p
+    ago --> p
+    ... --> p
+    p["Positional Encoding"] --> X
+    subgraph Encoder
+    X["\(X\)"] --> |"\(W^Q\)"| Q["\(Q\)"]
+    X["\(X\)"] --> |"\(W^K\)"| K["\(K\)"]
+    X["\(X\)"] --> |"\(W^V\)"| V["\(V\)"]
+    Q --> self["Self-Attention\((X) = \sigma(Q*K^T)*V\)"]
+    K --> self
+    V --> self
+    self --> c["Connected Layer"]
+    end
+    c -->  Y["\(Y\)"]
+
+    start["[start]"] --> pd["Positional Encoding"]
+    hace --> pd["Positional Encoding"]
+    mucho --> pd["Positional Encoding"]
+    tiempo --> pd["Positional Encoding"]
+    dots2["..."] --> pd["Positional Encoding"]
+
+    pd --> |"\(W^Q\)"| Q2["\(Q\)"]
+    subgraph Decoder
+    Y["\(Y\)"] --> |"\(W^K\)"| K2["\(K\)"]
+    Y["\(Y\)"] --> |"\(W^V\)"| V2["\(V\)"]
+    Q2 --> self2["Encoder/Decoder Attention\((Y,Q) = \sigma(Q*K^T)*V\)"]
+    K2 --> self2
+    V2 --> self2
+    self2 --> c2["Connected Layer"]
+    end
+    c2 --> |decode| Z["[eos]"]
+
+'
+caption="Stacked encoders with self-attention."
+%}
+]
+]
+.col50[
+- use output of encoder as the "dictionary"
+    - encoder creates key/value pairs
+- queries come from feeding output of sentence back to itself
+- start with some "[start]" token/vector
+- generate!
+- stop when generate "[eos]" token
+]
+---
+# Transformer!
+
+.col50[
+.height450[
+{% include chart
+chart='
+graph TB
+    A --> p
+    long --> p
+    time --> p
+    ago --> p
+    ... --> p
+    p["Positional Encoding"] --> X
+    subgraph Encoder
+    X["\(X\)"] --> |"\(W^Q\)"| Q["\(Q\)"]
+    X["\(X\)"] --> |"\(W^K\)"| K["\(K\)"]
+    X["\(X\)"] --> |"\(W^V\)"| V["\(V\)"]
+    Q --> self["Self-Attention\((X) = \sigma(Q*K^T)*V\)"]
+    K --> self
+    V --> self
+    self --> c["Connected Layer"]
+    end
+    c -->  Y["\(Y\)"]
+
+    start["[start]"] --> pd["Positional Encoding"]
+    hace --> pd["Positional Encoding"]
+    mucho --> pd["Positional Encoding"]
+    tiempo --> pd["Positional Encoding"]
+    dots2["..."] --> pd["Positional Encoding"]
+
+    pd --> |"\(W^Q\)"| Q2["\(Q\)"]
+    subgraph Decoder
+    Y["\(Y\)"] --> |"\(W^K\)"| K2["\(K\)"]
+    Y["\(Y\)"] --> |"\(W^V\)"| V2["\(V\)"]
+    Q2 --> self2["Encoder/Decoder Attention\((Y,Q) = \sigma(Q*K^T)*V\)"]
+    K2 --> self2
+    V2 --> self2
+    self2 --> c2["Connected Layer"]
+    end
+    c2 --> |decode| Z["[eos]"]
+
+'
+caption="A Transformer network for language."
+%}
+]
+]
+.col50[
+- use output of encoder as the "dictionary"
+    - encoder creates key/value pairs
+- queries come from feeding output of sentence back to itself
+- start with some "[start]" token/vector
+- generate!
+- stop when generate "[eos]" token
+- **Notes:**
+    - initial word encoding can be one-hot vector or other embedding (often cluster character sequences together, then run CNN on top) 
+    - final output can be softmax over vocab or more complex (CNN to generate characters)
+]
+
+.footnote[https://arxiv.org/pdf/1706.03762.pdf]
+
+---
+
+# BERT
+.col50[
+- Bidirectional Encoder Representations from Transformers
+- Train a transformer:
+    - masked language model:
+        - pick 15% of tokens in sentences
+        - 80% replace with "[mask]" token
+        - 10% replace with random token
+        - 10% keep original token
+        - predict correct token
+    - next sentence prediction:
+        - input a sentence, then...
+        - 50% input next sentence
+        - 50% input random sentence
+        - predict "isNext" or not
+- Pretrain on:
+    - BookCorpus (800M words)
+    - English Wikipedia (2,500M words)
+- Fine-tune on:
+    - Any NLP task!
+]
+.col50[
+The hardest (or most time consuming) part of NLP tasks is training a good representation. BERT learns a good representation at pretraining and can be adapted to many other tasks with a small amonut of fine-tuning!
+]
+
+---
+# The Future of NLP
+
+- Transformers!
+- Very big models:
+    - BERT: 345 million parameters
+    - GPT-2: 1.5 billion 
+    - MSFT NLG: 17 billion
+    - GPT-3: 175 billion
+- Lots of training data
+    - GPT-3 trained on corpus of 500 billion words
+        - Common Crawl (web data)
+        - WebText2 (web data)
+        - Books
+        - Wikipedia
+- Lots of resources
+    - 314 sextillion FLOPs
+    - ~$4.6 million in compute time*
+- Learn very powerful, general purpose text encoders, pay cost of learning a good representation once
+- Fine-tune on specific tasks, much cheaper!
+
+
+.footnote[*https://lambdalabs.com/blog/demystifying-gpt-3/]
+

@@ -1,0 +1,600 @@
+---
+layout: slides
+title: Deep Learning - 11 - Training and Sampling for Sequences 
+permalink: /slides/11
+---
+background-image: url('../figs/title.png')
+
+---
+class: center, middle
+
+# Chapter 11 - Training and Sampling for Sequences
+
+---
+
+#  Generating with RNNs
+
+{% include chart
+chart='
+graph TB
+    x1["[start]"] --> r1[RNN]
+    r1 --> y1[1]
+'
+caption=""
+%}
+
+Usually a special [start] token to begin generation
+
+Feed output into input of RNN at next time step
+
+    Generated: [start] 1
+
+---
+
+#  Generating with RNNs
+
+{% include chart
+chart='
+graph TB
+    x1["[start]"] --> r1[RNN]
+    r1 --> y1[1]
+
+    x2[1] --> r2[RNN]
+    r2 --> y2[+]
+'
+caption=""
+%}
+
+Usually a special [start] token to begin generation
+
+Feed output into input of RNN at next time step
+
+    Generated: [start] 1 +
+
+---
+
+#  Generating with RNNs
+
+{% include chart
+chart='
+graph TB
+    x1["[start]"] --> r1[RNN]
+    r1 --> y1[1]
+
+    x2[1] --> r2[RNN]
+    r2 --> y2[+]
+
+    x3[+] --> r3[RNN]
+    r3 --> y3[1]
+'
+caption=""
+%}
+
+Usually a special [start] token to begin generation
+
+Feed output into input of RNN at next time step
+
+    Generated: [start] 1 + 1
+
+---
+
+#  Generating with RNNs
+
+{% include chart
+chart='
+graph TB
+    x1["[start]"] --> r1[RNN]
+    r1 --> y1[1]
+
+    x2[1] --> r2[RNN]
+    r2 --> y2[+]
+
+    x3[+] --> r3[RNN]
+    r3 --> y3[1]
+
+    x4[1] --> r4[RNN]
+    r4 --> y4[=]
+'
+caption=""
+%}
+
+Usually a special [start] token to begin generation
+
+Feed output into input of RNN at next time step
+
+    Generated: [start] 1 + 1 =
+
+But wait, how are we even getting the output?
+
+---
+
+#  Generating with RNNs
+
+{% include chart
+chart='
+graph TB
+    x1["[start]"] --> r1[RNN]
+
+    x2[1] --> r2[RNN]
+
+    x3[+] --> r3[RNN]
+
+    x4[1] --> r4[RNN]
+
+    x5[=] --> r5[RNN]
+    r5 --> y5[??]
+'
+caption=""
+%}
+
+Output is a probability distribution:
+`$$Pr(x_n \mid x_1, x_2, \dots x_{n-1})$$`
+
+| 0  | 1  | 2  | 3  | 4  | 5  | 6  | 7  | 8  | 9  | +  | -  | *  | /  | =  |
+|-----------------------------------------------------------|
+|0.05|0.1 |0.7 |0.05|0.05|0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.05|0.0 |0.0 |0.0 |
+
+---
+
+#  Take the Max
+
+{% include chart
+chart='
+graph TB
+    x1["[start]"] --> r1[RNN]
+
+    x2[1] --> r2[RNN]
+
+    x3[+] --> r3[RNN]
+
+    x4[1] --> r4[RNN]
+
+    x5[=] --> r5[RNN]
+    r5 --> y5[??]
+'
+caption=""
+%}
+
+One option: take the max over possible next tokens
+
+| 0  | 1  | **2**  | 3  | 4  | 5  | 6  | 7  | 8  | 9  | +  | -  | *  | /  | =  |
+|-----------------------------------------------------------|
+|0.05|0.1 |**0.7** |0.05|0.05|0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.05|0.0 |0.0 |0.0 |
+
+
+    Generated: [start] 1 + 1 = 2
+
+---
+
+#  Problem with Max
+
+{% include chart
+chart='
+graph TB
+    x1["[start]"] --> r1[RNN]
+    r1 --> y1[1]
+
+    x2[1] --> r2[RNN]
+    r2 --> y2[+]
+
+    x3[+] --> r3[RNN]
+    r3 --> y3[1]
+
+    x4[1] --> r4[RNN]
+    r4 --> y4[+]
+
+    x5[+] --> r5[RNN]
+    r5 --> y5[1]
+
+    x6[1] --> r6[RNN]
+    r6 --> y6[+]
+
+    x7[+] --> r7[RNN]
+    r7 --> y7[...]
+'
+caption=""
+%}
+
+Problem: some tokens much more likely at all times (think: 'the', 'a', 'and', 'on', etc in text data)
+
+End up generating boring input, e.g.
+
+    Generated: 1 + 1 + 1 + 1 + ...
+
+---
+
+#  Sampling from RNNs
+
+{% include chart
+chart='
+graph TB
+    x1["[start]"] --> r1[RNN]
+
+    x2[1] --> r2[RNN]
+
+    x3[+] --> r3[RNN]
+
+    x4[1] --> r4[RNN]
+
+    x5[=] --> r5[RNN]
+    r5 --> y5[4]
+'
+caption=""
+%}
+
+Different option, sample from probability distribution randomly
+
+| 0  | 1  | 2  | 3  |**4**  | 5  | 6  | 7  | 8  | 9  | +  | -  | *  | /  | =  |
+|-----------------------------------------------------------|
+|0.05|0.1 |0.7 |0.05|**0.05**|0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.05|0.0 |0.0 |0.0 |
+
+
+    Generated: [start] 1 + 1 = 4
+
+---
+#  Sampling from RNNs
+
+{% include chart
+chart='
+graph TB
+    x1["[start]"] --> r1[RNN]
+
+    x2[1] --> r2[RNN]
+
+    x3[+] --> r3[RNN]
+
+    x4[1] --> r4[RNN]
+
+    x5[=] --> r5[RNN]
+    r5 --> y5[4]
+
+    x6[4] --> r6[RNN]
+    r6 --> y6[-]
+'
+caption=""
+%}
+
+Different option, sample from probability distribution randomly
+
+| 0  | 1  | 2  | 3  | 4  | 5  | 6  | 7  | 8  | 9  | +  | -  | *  | /  | =  |
+|-----------------------------------------------------------|
+|0.05 |0.0 |0.0 |0.05 |0.0 |0.0 |0.0 |0.1 |0.0 |0.0 |0.1 |**0.6** |0.0 |0.0 |0.0 |
+
+
+    Generated: [start] 1 + 1 = 4 - 
+
+---
+
+#  Sampling from RNNs
+
+{% include chart
+chart='
+graph TB
+    x1["[start]"] --> r1[RNN]
+
+    x2[1] --> r2[RNN]
+
+    x3[+] --> r3[RNN]
+
+    x4[1] --> r4[RNN]
+
+    x5[=] --> r5[RNN]
+    r5 --> y5[4]
+
+    x6[4] --> r6[RNN]
+    r6 --> y6[-]
+
+    x7[-] --> r7[RNN]
+    r7 --> y7[2]
+'
+caption=""
+%}
+
+Different option, sample from probability distribution randomly
+
+| 0  | 1  | 2  | 3  | 4  | 5  | 6  | 7  | 8  | 9  | +  | -  | *  | /  | =  |
+|-----------------------------------------------------------|
+|0.0 |0.05 |**0.9** |0.05 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |
+
+
+    Generated: [start] 1 + 1 = 4 - 2
+
+---
+#  Benefits of Sampling
+
+More diverse output!
+
+Usually safe when output is obvious (Pr > .9)
+
+Can generate synonymous statements:
+
+    The dog went to the park
+    The dog walked to the park
+    The dog trotted to the park
+    ...
+
+---
+#  Problem with Sampling
+
+{% include chart
+chart='
+graph TB
+    x1["[start]"] --> r1[RNN]
+
+    x2[1] --> r2[RNN]
+
+    x3[+] --> r3[RNN]
+
+    x4[1] --> r4[RNN]
+
+    x5[=] --> r5[RNN]
+    r5 --> y5[4]
+
+    x6[4] --> r6[RNN]
+    r6 --> y6[-]
+
+    x7[-] --> r7[RNN]
+    r7 --> y7[2]
+'
+caption=""
+%}
+
+Sometimes you make mistakes! Randomness can bite you
+
+| 0  | 1  | 2  | 3  | 4  | 5  | 6  | 7  | 8  | 9  | +  | -  | *  | /  | =  |
+|-----------------------------------------------------------|
+|0.0 |**0.05** |0.9 |0.05 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |
+
+
+    Generated: [start] 1 + 1 = 4 - 1
+
+---
+#  Problem with Sampling
+
+Want a way to generate diverse output BUT
+
+Don't want it to be too out there (i.e. still want correct grammar/syntax/sentence structure, etc)
+
+---
+
+#  Solution: Beam Search
+
+Generate tokens via sampling to increase diversity
+
+Remember multiple possible generated options
+
+Prune unlikely options, expand more likely ones
+
+Return most likely option (or something smarter?)
+
+
+---
+
+#  Solution: Beam Search
+
+Generate tokens via sampling to increase diversity
+
+Remember multiple possible generated options
+
+Prune unlikely options, expand more likely ones
+
+Return most likely option (or something smarter?)
+
+
+---
+
+#  Beam Search Algorithm
+
+    beam_search(model, n, length)
+        beams = []
+        for i in 0..length:
+            new_beams = []
+            for beam in beams:
+                compute Pr(x | beam)
+                sample n items from x:
+                    new_beam = beam
+                    new_beam += sample
+                    new_beams.append(new_beam)
+            sort(new_beams)         # sort by sum of log prob
+            beams = new_beams[:n]   # only keep n total beams
+
+
+
+---
+
+# Beam Search
+
+    Prob 0.5: [start] 1
+    Prob 0.3: [start] 2
+    Prob 0.1: [start] 4
+
+---
+
+# Beam Search
+Expand
+
+              [start] 1 +
+              [start] 1 -
+              [start] 1 =
+              [start] 2 -
+              [start] 2 +
+              [start] 2 *
+              [start] 4 -
+              [start] 4 /
+              [start] 4 =
+
+---
+
+# Beam Search
+Evaluate
+
+    Prob 0.2: [start] 1 +
+    Prob 0.1: [start] 1 -
+    Prob 0.4: [start] 1 =
+    Prob 0.2: [start] 2 -
+    Prob 0.1: [start] 2 +
+    Prob 0.1: [start] 2 *
+    Prob 0.3: [start] 4 -
+    Prob 0.5: [start] 4 /
+    Prob 0.1: [start] 4 =
+
+---
+
+# Beam Search
+Prune
+
+    Prob 0.5: [start] 4 /
+    Prob 0.4: [start] 1 =
+    Prob 0.3: [start] 4 -
+
+---
+
+# Beam Search
+Expand
+
+              [start] 4 / 2
+              [start] 4 / 1
+              [start] 4 / 1
+              [start] 1 = 3
+              [start] 1 = 2
+              [start] 1 = 1
+              [start] 4 - 4
+              [start] 4 - 0
+              [start] 4 - 2
+
+.... etc.
+
+---
+
+# Temperature: Controlling the Randomness
+
+Remember, our model predicts unnormalized probabilities
+
+We take softmax to convert to probabilities
+
+`$$\sigma(x) = \frac{e^{x_i}}{\sum_j e^{x_j}}$$`
+
+| $$x$$     | 1    | -4     | 2      | 4      | 3      |
+|--------------------------------------------------------|
+|$$\sigma(x)$$|.0321 | .0002 | .0871 | .6438 | .2368 |
+
+No real "reason" this is the right end distribution. We may want to encourage diversity, make our distribution more random. Or we may want to focus only on most likely elements.
+
+---
+
+# Temperature: Controlling the Randomness
+
+Softmax with temperature parameter, first divide by temperature then apply softmax:
+
+`$$\sigma_t(x) = \frac{e^{x_i/t}}{\sum_j e^{x_j/t}}$$`
+
+| $$x$$     | 1    | -4     | 2      | 4      | 3      |
+|--------------------------------------------------------|
+|$$\sigma_1(x)$$|.0321 | .0002 | .0871 | .6438 | .2368 |
+
+
+---
+
+# Low Temperature: More Like Argmax
+
+Softmax with temperature parameter, first divide by temperature then apply softmax:
+
+`$$\sigma_t(x) = \frac{e^{x_i/t}}{\sum_j e^{x_j/t}}$$`
+
+| $$x$$     | 1    | -4     | 2      | 4      | 3      |
+|--------------------------------------------------------|
+|$$\sigma_1(x)$$|.0321 | .0002 | .0871 | .6438 | .2368 |
+|$$\sigma_{0.3}(x)$$|.0000|     .0000|     .0012|     .9643|     .0344 |
+
+
+---
+
+# High Temperature: More Uniform
+
+Softmax with temperature parameter, first divide by temperature then apply softmax:
+
+`$$\sigma_t(x) = \frac{e^{x_i/t}}{\sum_j e^{x_j/t}}$$`
+
+| $$x$$     | 1    | -4     | 2      | 4      | 3      |
+|--------------------------------------------------------|
+|$$\sigma_1(x)$$|.0321 | .0002 | .0871 | .6438 | .2368 |
+|$$\sigma_{0.3}(x)$$|.0000|     .0000|     .0012|     .9643|     .0344 |
+|$$\sigma_{10}(x)$$|.1893| .1148| .2092| .2555| .2312|
+
+---
+
+# Softmax Temperature
+
+Temperature doesn't effect ordering of elements, just the relative magnitude
+
+High temperature: more "random", less reliant on model output
+
+Low temperature: less "random", magnifies relative differences in model output
+
+| $$x$$     | 1    | -4     | 2      | 4      | 3      |
+|--------------------------------------------------------|
+|$$\sigma_1(x)$$|.0321 | .0002 | .0871 | .6438 | .2368 |
+|$$\sigma_{0.3}(x)$$|.0000|     .0000|     .0012|     .9643|     .0344 |
+|$$\sigma_{10}(x)$$|.1893| .1148| .2092| .2555| .2312|
+
+[Colab demo here!](https://colab.research.google.com/drive/1Q1AIGsizj3fGX3uao_jkygheyNfCz_q_?usp=sharing)
+
+---
+
+# Evaluating RNNs
+
+How do we evaluate our sequence models?
+
+One option: accuracy
+
+Given sequence `\(x_1, x_2, \dots, x_n\)` how often does our model predict ground truth label `\(x_{n+1}\)`
+
+However, often our models have a large vocabulary and there are ambiguities! Accuracy may be very small even for good models
+
+---
+
+# Evaluating RNNs
+
+Another option: likelihood
+
+Instead, measure the probability our model assigns to the ground truth:
+
+`$$ \text{likelihood} = \prod_{i} \Pr(x_i \mid x_1, x_2, \dots, x_{i-1})$$`
+
+However these probabilities are often quite small (especially with large vocabularies) and will underflow floats. So in practice often use log-likelihood:
+
+`$$ \text{log-likelihood} = \sum_{i} \log[ \Pr(x_i \mid x_1, x_2, \dots, x_{i-1})]$$`
+
+Sometimes instead of maximizing likelihood we want to minimize something so you can also think about negative log-likelihood (which is a common loss function).
+
+---
+
+# Negative log-likelihood and cross-entropy
+
+There's another term you may have heard of, entropy or cross-entropy. The cross-entropy between two probability distributions p and q is:
+
+`$$H(p,q) = - \sum_x p(x) \log q(x)$$`
+
+In our case we can think of p(x) as the ground truth labels and q(x) as our model predictions. Since our labels are one-hot encodings of the correct word/token, p(x) will be 1 if x is the next token and 0 for all other tokens, thus cross-entropy  is the same as our negative log-likelihood:
+
+`$$ H = \text{NLL} = - \sum_{i} \log[ \Pr(x_i \mid x_1, x_2, \dots, x_{i-1})]$$`
+
+---
+
+# Perplexity
+
+It seems like cross entropy or NLL would be fine for determining how good a model is. We use them for our loss function! But noooo, NLP people have to be special so they use something else called **perplexity**. 
+
+It's not even that different though, you just raise entropy to an exponent:
+
+`$$PP = 2^{\frac{1}{N} - \sum_i \log \Pr(x_i)} $$`
+
+but also you can caluculate it with a base `\(e\)`:
+
+`$$PP = e^{\frac{1}{N} - \sum_i \ln \Pr(x_i)} $$`
+
+Or if your model already calculates cross-entropy for it's loss function you can just raise that to a power:
+
+`$$PP = e^H $$`
+
+You can use likelihood or cross-entropy or perplexity. Just make sure if you compare to other models that you have the details consistent! (like what exponent, etc)

@@ -1,0 +1,8 @@
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+{{ include.chart }}
+</div>
+</div>
+<figcaption>{{ include.caption }} <a target="_blank" href="../chartsrc?src={{ include.chart | url_encode }}">(source)</a></figcaption>
+</figure>

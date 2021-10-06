@@ -1,0 +1,4 @@
+<figure class="figure">
+{{ include.html }}
+<figcaption>{{ include.caption }}</figcaption>
+</figure>

@@ -1,0 +1,4 @@
+<figure class="image">
+  <img src="{{ include.src }}" alt="{{ include.alt }}" data-attribution="{{ include.attribution }}">
+  <figcaption>{{ include.caption }}</figcaption>
+</figure>

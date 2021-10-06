@@ -1,0 +1,655 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Deep Learning - 04 - Convolutional Neural Networks</title>
+    <style>
+        foreignObject {overflow:visible}
+        img {max-width:100%;
+        vertical-align:middle;}
+
+    </style>
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script src="https://www.desmos.com/api/v1.5/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+  </head>
+  <body>
+    <h1 id="chapter-4-convolutional-neural-networks">Chapter 4: Convolutional Neural Networks</h1>
+
+<h2 id="fully-connected-layers-and-images">Fully Connected Layers and Images</h2>
+
+<p>Say we want to run our neural networks on image data. We know that in image processing, feature extraction is very important to make machine learning models work well.</p>
+
+<p>One standard technique for extracting features is the <strong>histogram of oriented gradients (HOG)</strong> method. You don’t have to worry too much about how HOG works, it’s basically just looking at patches in the input image and measuring which way the gradients (edges) face in those patches. The important part is the dimensions of HOG features. HOG features produce a 36-element vector for each \(8 \x 8\) patch in the input.</p>
+
+<p>Say we want to learn feature extraction using neural networks instead. If we want to mimic HOG features our network might look like:</p>
+<ul>
+  <li>Input: \(256 \x 256 \x 3\) RGB image</li>
+  <li>Hidden: \(32 \x 32 \x 36\) feature map</li>
+  <li>Output: \(1000\) classes</li>
+</ul>
+
+<p>Since fully connected layers are <em>fully</em> connected there are 7.2 billion connections between the input and hidden layer!</p>
+
+<p>During feature extraction, our network is looking at the entire image every time it computes a single feature. However, HOG features (and most image features) are meant to capture local information, like what edges are present nearby. We don’t need to look at the whole image for this.</p>
+
+<p>For most feature extraction on images we can impose the assumption that pixels that are far apart are statistically independent. This means we only need to look at smaller, local regions when performing feature extraction.</p>
+
+<h2 id="convolutions-powerful-local-feature-extraction">Convolutions: Powerful, Local Feature Extraction</h2>
+
+<p><strong>Convolutions</strong> are a powerful tool for local feature extraction in a signal. The convolution operation takes two functions and slides one along the other, performing a dot product of their intersection to form an output signal. Note: in computer vision we talk about convolutions but in the signal processing domain what we’re actually talking about is a cross-correlation. I’m not going to try to correct a decade of mistaken terminology in this class so I’m just going to call it a convolution idk sorry…</p>
+
+<p>Anyway, it’s nice to start with a 1-D example. We’ll be talking about discrete functions which we can just think of as vectors. We’ll define the convolution operator as follows:</p>
+
+\[(m * f)(x) = m_{[x-1, x+1]} \cdot f\]
+
+<h3 id="example-convolution-high-pass-filter">Example Convolution: High-Pass Filter</h3>
+
+<p>Take discrete functions \(m\) and \(f\). To convolve these filters we simply slide the filter \(f\) along input signal (or function) \(m\) and take weighted sums, storing the result in a new vector.</p>
+
+<ul>
+  <li>Let’s calculate \(m * f\) where
+    <ul>
+      <li>\(m = [0, 1, 2, 3, 2, 5, 6, 7, 8, 14, 10, 11, 12, 8, 14]\)</li>
+      <li>\(f = [-1, 2, -1]\)</li>
+      <li>First element is dot product of first three elements of \(m\) with \(f\), \(m_{[0-2]} \cdot f\)</li>
+      <li>…</li>
+    </ul>
+  </li>
+</ul>
+
+\[\begin{align*}
+&amp;(m*f)(1)  = m_{[0-2]} \cdot f  = [0,1,2] \cdot [-1,2,-1]      =   0 + 2 - 2     =&amp; 0   \\
+&amp;(m*f)(2)  = m_{[1-3]} \cdot f  = [1,2,3] \cdot [-1,2,-1]      =  -1 + 4 - 3     =&amp; 0   \\
+&amp;(m*f)(3)  = m_{[2-4]} \cdot f  = [2,3,2] \cdot [-1,2,-1]      =  -2 + 6 - 2     =&amp; 2   \\
+&amp;(m*f)(4)  = m_{[3-5]} \cdot f  = [3,2,5] \cdot [-1,2,-1]      =  -3 + 4 - 5     =&amp; -4  \\
+&amp;(m*f)(5)  = m_{[4-6]} \cdot f  = [2,5,6] \cdot [-1,2,-1]      =  -2 + 10 - 6    =&amp; 2   \\
+&amp;(m*f)(6)  = m_{[5-7]} \cdot f  = [5,6,7] \cdot [-1,2,-1]      =  -5 + 12 - 7    =&amp; 0   \\
+&amp;(m*f)(7)  = m_{[6-8]} \cdot f  = [6,7,8] \cdot [-1,2,-1]      =  -6 + 14 - 8    =&amp; 0   \\
+&amp;(m*f)(8)  = m_{[6-8]} \cdot f  = [7,8,14] \cdot [-1,2,-1]     =  -7 + 16 - 14   =&amp; -5  \\
+&amp;(m*f)(9)  = m_{[6-8]} \cdot f  = [8,14,10] \cdot [-1,2,-1]    =  -8 + 28 - 10   =&amp; 10  \\
+&amp;(m*f)(10) = m_{[6-8]} \cdot f  = [14,10,11] \cdot [-1,2,-1]   =  -14 + 20 - 11  =&amp; -5  \\
+&amp;(m*f)(11) = m_{[6-8]} \cdot f  = [10,11,12] \cdot [-1,2,-1]   =  -10 + 22 - 12  =&amp; 0   \\
+&amp;(m*f)(12) = m_{[6-8]} \cdot f  = [11,12,8] \cdot [-1,2,-1]    =  -11 + 24 - 8   =&amp; 5   \\
+&amp;(m*f)(13) = m_{[6-8]} \cdot f  = [12,8,14] \cdot [-1,2,-1]    =  -12 + 16 - 14  =&amp; -10 \\
+\end{align*}\]
+
+<p>So the output is the vector:</p>
+
+\[m*f = [0 , 0 , 2 , -4 , 2 , 0 , 0 , -5 , 10 , -5 , 0 , 5 , -10]\]
+
+<p>This particular filter, \(f = [-1, 2, -1]\), is a <strong>high-pass filter</strong>. It doesn’t respond to slow changes in the function but does respond to fast changes. The results is an output signal centered around zero that oscillates up and down when the input signal quickly moves up or down.</p>
+
+<figure class="figure">
+<iframe src="https://www.desmos.com/calculator/6tm5gtkaxs?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameborder="0"></iframe>
+<figcaption>Input signal \(m\) and output \(m*f\). The high-pass filter suppresses the slow rise of \(m\) but shows the wiggles.</figcaption>
+</figure>
+
+<h3 id="padding">Padding</h3>
+
+<p>Notice that our input signal \(m\) has 15 elements but our output \(m*f\) only has 13 elements. We can’t apply the filter outside the bounds of our original function \(m\) so our output signal \(m*f\) with have size \(\vert m\vert - \lfloor\frac{\vert f \vert}{2}\rfloor\), in this case \(15 - 2 = 13\). Often it is helpful to have your input and output be the same size (like when processing data with neural networks!) so you may want to <strong>pad</strong> your input with data to make the output end up the same size. Consider using:</p>
+
+<ul>
+  <li><strong>zero-padding</strong>: pad with zeros</li>
+  <li><strong>clamp-padding</strong> (extend/replicate padding): repeat the last elements outward</li>
+  <li><strong>wrap-padding</strong> (circular padding): wrap around to the other side of the input signal</li>
+  <li><strong>mirror-padding</strong> (reflect padding): reflect data from inside the signal outward into padded region</li>
+</ul>
+
+<p>Most of the time zero-padding is a good option but you can try other versions too.</p>
+
+<h3 id="low-pass-filter">Low-Pass Filter</h3>
+
+<p>Another useful filter to know is \(f = [0.\overline{3}, 0.\overline{3}, 0.\overline{3}]\) or \(f = [0.2, 0.2, 0.2, 0.2, 0.2]\) or in general \(f = \frac{1}{n}[1,1,1,\dots,1]\). This is a <strong>low-pass filter</strong> or blurring filter, the output at every pixel is an average of a local window in the input signal.</p>
+
+<h3 id="convolutions-in-2d">Convolutions In 2D</h3>
+
+<p>Convolutional filters are powerful feature extractors in 2D. Here’s an example of high-pass and low-pass filters (or <strong>box filter</strong>) in two dimensions:</p>
+
+\[\text{High-Pass Filter} = \begin{bmatrix}
+-1 &amp; -1 &amp; -1 \\
+-1 &amp;  8 &amp; -1 \\
+-1 &amp; -1 &amp; -1 \\
+\end{bmatrix}\]
+
+\[\text{Low-Pass "Box" Filter} = \frac{1}{9}\begin{bmatrix}
+1 &amp; 1 &amp; 1 \\
+1 &amp; 1 &amp; 1 \\
+1 &amp; 1 &amp; 1 \\
+\end{bmatrix}\]
+
+<h4 id="output-of-high-pass-filter-on-image">Output of High-Pass Filter on Image</h4>
+
+<p><img src="../figs/dog.jpg" alt="An image of a dog on a porch with a bike, a car in the background" /> \(*\begin{bmatrix}
+-1 &amp; -1 &amp; -1 \\
+-1 &amp;  8 &amp; -1 \\
+-1 &amp; -1 &amp; -1 \\
+\end{bmatrix} =\)
+<img src="../figs/dog-highpass.jpg" alt="A mostly black image with lines in the original image in white" /></p>
+
+<h4 id="output-of-low-pass-filter-on-image">Output of Low-Pass Filter on Image</h4>
+
+<p><img src="../figs/dog.jpg" alt="An image of a dog on a porch with a bike, a car in the background" /> \(* \frac{1}{9}\begin{bmatrix}
+1 &amp; 1 &amp; 1 \\
+1 &amp; 1 &amp; 1 \\
+1 &amp; 1 &amp; 1 \\
+\end{bmatrix} =\)
+<img src="../figs/dog-box7.jpg" alt="A blurry version of the original image" /></p>
+
+<h4 id="sobel-filters">Sobel Filters</h4>
+
+<p>Sobel filters are convolutional filters designed to take the (approximate) derivative of an image in the x and y dimension.</p>
+
+\[G_x = \begin{bmatrix}
+-1 &amp;  0 &amp;  1 \\
+-2 &amp;  0 &amp;  2 \\
+-1 &amp;  0 &amp;  1 \\
+\end{bmatrix}\]
+
+\[G_y = \begin{bmatrix}
+-1 &amp; -2 &amp; -1 \\
+ 0 &amp;  0 &amp;  0 \\
+ 1 &amp;  2 &amp;  1 \\
+\end{bmatrix}\]
+
+<p>Using these filters we can do things like find high rates of change in the x-dimension (vertical lines), y-dimension (horizontal lines), or calculate the magnitude and direction of all gradients (lines) in the image.</p>
+
+<p><img src="../figs/dog.jpg" alt="An image of a dog on a porch with a bike, a car in the background" /> \(* \begin{bmatrix}
+-1 &amp;  0 &amp;  1 \\
+-2 &amp;  0 &amp;  2 \\
+-1 &amp;  0 &amp;  1 \\
+\end{bmatrix} =\)
+<img src="../figs/dog-dx.jpg" alt="A mostly black image with vertical lines in the original image drawn in white" /></p>
+
+<p><img src="../figs/dog.jpg" alt="An image of a dog on a porch with a bike, a car in the background" /> \(* \begin{bmatrix}
+-1 &amp; -2 &amp; -1 \\
+ 0 &amp;  0 &amp;  0 \\
+ 1 &amp;  2 &amp;  1 \\
+\end{bmatrix} =\)
+<img src="../figs/dog-dy.jpg" alt="A mostly black image with horizontal lines in the original image drawn in white" /></p>
+
+<p>\(\arctan(\frac{dy}{dx}) =\)<img src="../figs/dog-color.jpg" alt="A mostly black image lines in the original image drawn in color, the color depending on the angle of the edge in the original image" /></p>
+
+<h4 id="convolutional-filters-respond-strongly-to-themselves">Convolutional Filters Respond Strongly to Themselves</h4>
+
+<p>Convolutional filters respond strongly to patches in an image that have a similar structure. For instance, our Sobel Filter \(G_x\) will respond strongly to vertical lines or gradients that increase from left to right. It will also respond strongly (with high magnitude but negative value) to gradients that decrease from left to right. It won’t respond at all to constant values, gradients in vertical axis, or vertical lines. This intuition can be helpful when understanding what a filter will respond to.</p>
+
+<h4 id="multi-channel-convolutions">Multi-Channel Convolutions</h4>
+
+<p>Images are typically 3 channel with RGB components and feature maps can have many channels. Convolutional filters usually have the same number of channels as the input signal they are run on. The weighted sum happens in a local pixel neighborhood across all channels of the image. For example, here is a filter that responds to vertical edges in the red channel, horizontal edges in the green channel, and ignores the blue channel.</p>
+
+\[f = \begin{bmatrix} \begin{bmatrix}
+-1 &amp;  0 &amp;  1 \\
+-2 &amp;  0 &amp;  2 \\
+-1 &amp;  0 &amp;  1 \\
+\end{bmatrix} &amp; \begin{bmatrix}
+-1 &amp; -2 &amp; -1 \\
+ 0 &amp;  0 &amp;  0 \\
+ 1 &amp;  2 &amp;  1 \\
+\end{bmatrix}  &amp; \begin{bmatrix}
+ 0 &amp;  0 &amp;  0 \\
+ 0 &amp;  0 &amp;  0 \\
+ 0 &amp;  0 &amp;  0 \\
+\end{bmatrix}\end{bmatrix}\]
+
+<h2 id="convolutions-as-feature-extraction">Convolutions as Feature Extraction</h2>
+
+<p>Hopefully you are now convinced that convolutional filters are effective at extracting useful information from local patches in signal data (such as images). Though they are powerful feature extractors, they are relatively simple, we are just doing a weighted sum of the input with a filter.</p>
+
+<p>Convolutions, especially filters like sobel filters, were commonly used as a first step in feature extraction before deep neural networks. The features they found would be aggregated in local areas to produce descriptors like HOG features.</p>
+
+<p>But now we want to bake feature extraction into our neural network. Fully connected layers were too dense but convolutions are spare operations (each pixel in the output is only connected to a local neighborhood in the input) and are computationally fairly cheap (like connected layers we are just doing a weighted sum to compute convolutions).</p>
+
+<p>So instead of using pre-defined convolutional filters we can implement neural network layers that perform convolution operations. The weights in these layers can be updated via error backpropagation so we learn filters that work well for the particular task.</p>
+
+<h2 id="convolutional-layer">Convolutional Layer</h2>
+
+<ul>
+  <li>Input: An image</li>
+  <li>Processing: Convolution with multiple filters</li>
+  <li>Output: An image/feature map of extracted features</li>
+</ul>
+
+<h3 id="parameters">Parameters</h3>
+
+<ul>
+  <li><strong>n</strong>: number of filters, each filter produces a feature map in the output, the number of filters determines the number of channels in the output</li>
+  <li><strong>size</strong>: spatial dimensions of the filters</li>
+  <li><strong>stride</strong>: how far the filter moves with every application</li>
+</ul>
+
+<p>Notationally I will use \([128 \mid 3 \times 3 \text{ s } 2]\) to denote a convolutional layer with 128 filters, size \(3 \times 3\) applied with a stride of 2.</p>
+
+<h4 id="number-of-filters">Number of Filters</h4>
+
+<p>Each filter processes the input image or feature map and produces a single channel for the output feature map. More filters mean the layer can specialize and extract more specific features. However it also means the layer take longer to process.</p>
+
+<p>In general you need fewer features in the early layers because there aren’t very many interesting features to look for. For instance in the first layer there are only so many orientations of edges and color blobs to look for. Adding more filters can just lead to redundancy without being productive.</p>
+
+<p>Later layers tend to have more filters as the spatial dimensions of the image shrinks. There’s less information in the spatial dimension but more semantic information and more channels to process and look for patterns in.</p>
+
+<h4 id="filter-size">Filter Size</h4>
+
+<p>Larger filters can process more information in the spatial dimensions but take longer to process. Smaller filters are faster. In general filters are square and usually have odd parity in size. Only a few filters are commonly used although there is room to explore other options. The common ones are:</p>
+
+<ul>
+  <li>\(3 \times 3\) filter: the most common filter size, it can process information in the spatial dimension but also is very efficient and fast</li>
+  <li>\(1 \times 1\) filter: second most common size, it doesn’t process spatial information but does find patterns across channels and is very fast</li>
+  <li>\(7 \times 7\) filter: often larger size filters are used in the first layer where the cost is much less since there are only 3 channels in the input</li>
+  <li>\(2 \times 2\) filter, stride of 2: not very common but one alternative to maxpooling layers for downsampling, although \(3 \times 3\) stride 2 convolutions are more common</li>
+</ul>
+
+<p>It’s important to note that aside from the spatial dimension filters have a number of channels. This number of channels is usually equal to the number of channels in the input and every filter processes information from each channel in the input. However, <strong>grouped</strong> convolutions split the input into smaller subsets of channels and each filter only processes a subset of the channels.</p>
+
+<h4 id="stride">Stride</h4>
+
+<p>Typically convolutional filters are applied at every pixel location, by striding the filter 1 pixel to the left across the image, then back to the beginning and 1 pixel down, etc. By using a stride of 2 pixels or more convolutional filters downsample the image by a factor equal to the stride. A convolution with a stride of two will (usually) create an output feature map with half the width and half the height of the input.</p>
+
+<p>The most common stride values are 1 and 2, larger strides are very seldom used in image processing (but may be more common in other domains).</p>
+
+<h3 id="forward-pass">Forward Pass</h3>
+
+<p>On the forward pass of a convolutional layer the input feature map \(x\) is convolved with each filter. Usually each filter has the same number of channels as the input so each application of the filter performs a weighted sum over some patch in the image across all channels.</p>
+
+<p>Each filter also has a constant bias term that is added in to the output. The same bias is added regardless of the location of filter application so this is equivalent to adding a constant amount to each channel of the image (although each filter and thus each channel in the output has a separate bias term). This image (or often batch of images) is return as \(y\).</p>
+
+<h3 id="backward-pass">Backward Pass</h3>
+
+<p>On the backward pass the convolutional layer calculates \(\frac{dL}{dx}\) from \(\frac{dL}{dy}\) to pass back to the previous layer. This is done through what is sometimes referred to as a <strong>deconvolution</strong>, each pixel in the error term \(\frac{dL}{dy}\) is multiplied by elements in the weight matrix and projected backward into an image of the same size as the original input. In practice we will do this with matrix operations, it’s just as confusing but at least it’s sligthly easier to implement and it’s quite fast. See below for details.</p>
+
+<p>The backward pass also calculates \(\frac{dL}{df}\) and \(\frac{dL}{db}\). Similar to connected layers, \(\frac{dL}{db}\) is calculated by aggregating the error terms over elements in a batch but also over spatial locations in the same channel (since one bias is used for the entire filter/channel). \(\frac{dL}{df}\) is calculated by multiplying the appropriate input pixel in \(x\) by term in \(\frac{dL}{dy}\) and aggregating across multiple filter applications (since the same weight in a filter connects multiple inputs to outputs).</p>
+
+<h3 id="update">Update</h3>
+
+<p>For the weight update we’ll use the same update process as connected layer. For SGD with momentum and decay our weight update is:</p>
+
+\[\begin{align}\Delta_t &amp;= \frac{dL}{df} + \lambda f + m \Delta_{t-1}\\
+f &amp;= f - \eta \Delta_t \end{align}\]
+
+<h3 id="implementation-details">Implementation Details</h3>
+
+<p>There are a few things to consider when implementing convolutional layers. Where will you start the filter application? Do you pad the input or have a smaller size output than input (as we saw in the 1D example)? How do you handle ambiguities related to strided convolutions and downsampling? How do you make your implementation efficient?</p>
+
+<p>In general (I think) it’s good to have convolutional layers produce output feature maps that are the same size as the input. For convolutions that aren’t \(1 \times 1\) this means padding the input.</p>
+
+<h4 id="strided-convolutions-on-dimensions-that-arent-divisible">Strided Convolutions on Dimensions that Aren’t Divisible</h4>
+
+<p>When considering strided convolutions there are edge cases that arise when the input dimension is not divisible by the stride, for example applying a \(3 \times 3 \text{ s } 2\) filter to a \(5 \times 5\) image. In this case, our output could either be \(3 \times 3\) or \(2 \times 2\). In 1D if we are convolving filter \(f = [f_0, f_1, f_2]\) with signal \(x = [x_0, x_1, x_2, x_3, x_4]\) we could either decide to pad the input with zeros and apply the convolution 3 times or not pad the input and only apply the convolution twice:</p>
+
+<h5 id="padding-a-strided-convolution">Padding a Strided Convolution:</h5>
+
+<p>With zero padding we can apply the filter three times as shown below:</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>\(x_0\)</td>
+      <td>\(x_1\)</td>
+      <td>\(x_2\)</td>
+      <td>\(x_3\)</td>
+      <td>\(x_4\)</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+      <td>\(f_2\)</td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td> </td>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+      <td>\(f_2\)</td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+      <td>\(f_2\)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Output: \(x * f = [0f_0 + x_0f_1 + x_1f_2,\quad x_1f_0 + x_2f_1 + x_3f_2,\quad x_3f_0 + x_4f_1 + 0f_2]\).</p>
+
+<h5 id="not-padding-a-strided-convolution">Not Padding a Strided Convolution:</h5>
+
+<p>Without zero padding we only look at pixels internal to the image but we shrink the output by more than the stride of the convolution</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>\(x_0\)</td>
+      <td>\(x_1\)</td>
+      <td>\(x_2\)</td>
+      <td>\(x_3\)</td>
+      <td>\(x_4\)</td>
+    </tr>
+    <tr>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+      <td>\(f_2\)</td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td> </td>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+      <td>\(f_2\)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Output: \(x * f = [x_0f_0 + x_1f_1 + x_2f_2,\quad x_2f_0 + x_3f_1 + x_4f_2]\).</p>
+
+<p>Both of these approaches are equally valid and just make different tradeoffs.</p>
+
+<h4 id="where-to-pad-even-size-convolutions">Where To Pad Even Size Convolutions</h4>
+
+<p>If you use a convolutional filter of even size there can be ambiguity about where to pad the input. For example, if you want the output to be the same size as the input and are convolving a length 2 filter with length 5 input you can pad at either the beginning or end:</p>
+
+<h5 id="padding-beginning-of-even-size-convolution">Padding Beginning of Even Size Convolution</h5>
+
+<p>With zero padding at the start we can apply the filter four times as shown below:</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>\(x_0\)</td>
+      <td>\(x_1\)</td>
+      <td>\(x_2\)</td>
+      <td>\(x_3\)</td>
+      <td>\(x_4\)</td>
+    </tr>
+    <tr>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td> </td>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Output: \(x * f = [0f_0 + x_0f_1,\quad x_0f_0 + x_1f_1,\quad x_1f_0 + x_2f_1,\quad x_2f_0 + x_3f_1,\quad x_3f_0 + x_4f_1]\).</p>
+
+<h5 id="padding-end-of-even-size-convolution">Padding End of Even Size Convolution</h5>
+
+<p>With zero padding at the end we can apply the filter four times as shown below:</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>\(x_0\)</td>
+      <td>\(x_1\)</td>
+      <td>\(x_2\)</td>
+      <td>\(x_3\)</td>
+      <td>\(x_4\)</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td> </td>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+      <td> </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td> </td>
+      <td>\(f_0\)</td>
+      <td>\(f_1\)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Output: \(x * f = [x_0f_0 + x_1f_1,\quad x_1f_0 + x_2f_1,\quad x_2f_0 + x_3f_1,\quad x_3f_0 + x_4f_1,\quad x_4f_0 + 0f_1]\).</p>
+
+<h4 id="convolutions-as-matrix-operations">Convolutions as Matrix Operations</h4>
+
+<p>To make convolutions fast we can implement them using matrix primitives. Assuming we have \(N\) filters of size \(S \times S\) running on an image of dimensions \(W \times H \times C\) with a stride \(T\), assuming the stride evenly divides the input dimensions, we will have:</p>
+
+<ul>
+  <li>input image \(x\): \(1 \times (C*H*W)\)</li>
+  <li>filters \(f\): \(N \times (C*S*S)\).</li>
+  <li>column matrix \(m\): \((C*S*S) \times \frac{H*W}{T*T}\).</li>
+  <li>output image \(y\): \(N \times \frac{H*W}{T*T}\).</li>
+</ul>
+
+<p>The input image \(x\) is a single vector with image data in CHW format.</p>
+
+<p>The filters \(f\) are stored in a matrix where every row is a separate filter and each filter is stored as if reading out the filter left-to-right, top-to-bottom, channel-by-channel (CHW format).</p>
+
+<p>The column matrix \(m\) is a rearrangement of our input image where each column represents the input to one application of a convolutional filter. The number of rows is the number of elements in a filter \(C*S*S\) and the number of columns is the number of spatial locations that filters are applied in the image (i.e. the number of pixels in the output image).</p>
+
+<p>The output image \(m\) is arranged in CHW format but for the output dimensions. It is an image with \(N\) channels, \(\frac{H}{T}\) height, and \(\frac{W}{T}\) width.</p>
+
+<p>We can produce the output quite simply by multiplying the filters by the column matrix:</p>
+
+\[y = f m\]
+
+<p>The tricky part then is creating and filling in the column matrix. Here’s a small example with an RGB image that is 4x3:</p>
+
+\[f = \begin{bmatrix} \begin{bmatrix}
+r_{0,0} &amp; r_{0,1} &amp; r_{0,2} &amp; r_{0,3} \\
+r_{1,0} &amp; r_{1,1} &amp; r_{1,2} &amp; r_{1,3} \\
+r_{2,0} &amp; r_{2,1} &amp; r_{2,2} &amp; r_{2,3} \\
+\end{bmatrix} &amp; \begin{bmatrix}
+g_{0,0} &amp; g_{0,1} &amp; g_{0,2} &amp; g_{0,3}  \\
+g_{1,0} &amp; g_{1,1} &amp; g_{1,2} &amp; g_{1,3}  \\
+g_{2,0} &amp; g_{2,1} &amp; g_{2,2} &amp; g_{2,3}  \\
+\end{bmatrix}  &amp; \begin{bmatrix}
+b_{0,0} &amp; b_{0,1} &amp; b_{0,2} &amp; b_{0,3} \\
+b_{1,0} &amp; b_{1,1} &amp; b_{1,2} &amp; b_{1,3} \\
+b_{2,0} &amp; b_{2,1} &amp; b_{2,2} &amp; b_{2,3} \\
+\end{bmatrix}\end{bmatrix}\]
+
+\[\text{col2im}(f, \text{size}=3, \text{stride}=1) = \begin{bmatrix}
+ 0&amp;0&amp;0&amp;0&amp; 0     &amp; r_{0,0} &amp; r_{0,1} &amp; r_{0,2} &amp; 0       &amp; r_{1,0} &amp; r_{1,1} &amp; r_{1,2} \\
+ 0&amp;0&amp;0&amp;0&amp;r_{0,0} &amp; r_{0,1} &amp; r_{0,2} &amp; r_{0,3} &amp; r_{1,0} &amp; r_{1,1} &amp; r_{1,2} &amp; r_{1,3}\\
+ 0&amp;0&amp;0&amp;0&amp;r_{0,1} &amp; r_{0,2} &amp; r_{0,3} &amp;    0    &amp; r_{1,1} &amp; r_{1,2} &amp; r_{1,3} &amp;   0    \\
+   0     &amp; r_{0,0} &amp; r_{0,1} &amp; r_{0,2} &amp; 0       &amp; r_{1,0} &amp; r_{1,1} &amp; r_{1,2} &amp; 0       &amp; r_{2,0} &amp; r_{2,1} &amp; r_{2,2}\\
+ r_{0,0} &amp; r_{0,1} &amp; r_{0,2} &amp; r_{0,3} &amp; r_{1,0} &amp; r_{1,1} &amp; r_{1,2} &amp; r_{1,3} &amp; r_{2,0} &amp; r_{2,1} &amp; r_{2,2} &amp; r_{2,3}\\
+ r_{0,1} &amp; r_{0,2} &amp; r_{0,3} &amp;    0    &amp; r_{1,1} &amp; r_{1,2} &amp; r_{1,3} &amp;   0     &amp; r_{2,1} &amp; r_{2,2} &amp; r_{2,3} &amp;   0    \\
+ 0       &amp; r_{1,0} &amp; r_{1,1} &amp; r_{1,2} &amp; 0       &amp; r_{2,0} &amp; r_{2,1} &amp; r_{2,2}&amp;0&amp;0&amp;0&amp;0\\
+ r_{1,0} &amp; r_{1,1} &amp; r_{1,2} &amp; r_{1,3} &amp; r_{2,0} &amp; r_{2,1} &amp; r_{2,2} &amp; r_{2,3}&amp;0&amp;0&amp;0&amp;0\\
+ r_{1,1} &amp; r_{1,2} &amp; r_{1,3} &amp;   0     &amp; r_{2,1} &amp; r_{2,2} &amp; r_{2,3} &amp;   0    &amp;0&amp;0&amp;0&amp;0\\
+
+ 0&amp;0&amp;0&amp;0&amp; 0     &amp; g_{0,0} &amp; b_{0,1} &amp; b_{0,2} &amp; 0       &amp; b_{1,0} &amp; b_{1,1} &amp; b_{1,2} \\
+ 0&amp;0&amp;0&amp;0&amp;g_{0,0} &amp; b_{0,1} &amp; b_{0,2} &amp; b_{0,3} &amp; b_{1,0} &amp; b_{1,1} &amp; b_{1,2} &amp; b_{1,3}\\
+ 0&amp;0&amp;0&amp;0&amp;g_{0,1} &amp; b_{0,2} &amp; b_{0,3} &amp;    0    &amp; b_{1,1} &amp; b_{1,2} &amp; b_{1,3} &amp;   0    \\
+   0     &amp; g_{0,0} &amp; b_{0,1} &amp; b_{0,2} &amp; 0       &amp; b_{1,0} &amp; b_{1,1} &amp; b_{1,2} &amp; 0       &amp; b_{2,0} &amp; b_{2,1} &amp; b_{2,2}\\
+ g_{0,0} &amp; b_{0,1} &amp; b_{0,2} &amp; b_{0,3} &amp; b_{1,0} &amp; b_{1,1} &amp; b_{1,2} &amp; b_{1,3} &amp; b_{2,0} &amp; b_{2,1} &amp; b_{2,2} &amp; b_{2,3}\\
+ g_{0,1} &amp; b_{0,2} &amp; b_{0,3} &amp;    0    &amp; b_{1,1} &amp; b_{1,2} &amp; b_{1,3} &amp;   0     &amp; b_{2,1} &amp; b_{2,2} &amp; b_{2,3} &amp;   0    \\
+ 0       &amp; g_{1,0} &amp; b_{1,1} &amp; b_{1,2} &amp; 0       &amp; b_{2,0} &amp; b_{2,1} &amp; b_{2,2}&amp;0&amp;0&amp;0&amp;0\\
+ g_{1,0} &amp; b_{1,1} &amp; b_{1,2} &amp; b_{1,3} &amp; b_{2,0} &amp; b_{2,1} &amp; b_{2,2} &amp; b_{2,3}&amp;0&amp;0&amp;0&amp;0\\
+ g_{1,1} &amp; b_{1,2} &amp; b_{1,3} &amp;   0     &amp; b_{2,1} &amp; b_{2,2} &amp; b_{2,3} &amp;   0    &amp;0&amp;0&amp;0&amp;0\\
+
+ 0&amp;0&amp;0&amp;0&amp; 0     &amp; b_{0,0} &amp; b_{0,1} &amp; b_{0,2} &amp; 0       &amp; b_{1,0} &amp; b_{1,1} &amp; b_{1,2} \\
+ 0&amp;0&amp;0&amp;0&amp;b_{0,0} &amp; b_{0,1} &amp; b_{0,2} &amp; b_{0,3} &amp; b_{1,0} &amp; b_{1,1} &amp; b_{1,2} &amp; b_{1,3}\\
+ 0&amp;0&amp;0&amp;0&amp;b_{0,1} &amp; b_{0,2} &amp; b_{0,3} &amp;    0    &amp; b_{1,1} &amp; b_{1,2} &amp; b_{1,3} &amp;   0    \\
+   0     &amp; b_{0,0} &amp; b_{0,1} &amp; b_{0,2} &amp; 0       &amp; b_{1,0} &amp; b_{1,1} &amp; b_{1,2} &amp; 0       &amp; b_{2,0} &amp; b_{2,1} &amp; b_{2,2}\\
+ b_{0,0} &amp; b_{0,1} &amp; b_{0,2} &amp; b_{0,3} &amp; b_{1,0} &amp; b_{1,1} &amp; b_{1,2} &amp; b_{1,3} &amp; b_{2,0} &amp; b_{2,1} &amp; b_{2,2} &amp; b_{2,3}\\
+ b_{0,1} &amp; b_{0,2} &amp; b_{0,3} &amp;    0    &amp; b_{1,1} &amp; b_{1,2} &amp; b_{1,3} &amp;   0     &amp; b_{2,1} &amp; b_{2,2} &amp; b_{2,3} &amp;   0    \\
+ 0       &amp; b_{1,0} &amp; b_{1,1} &amp; b_{1,2} &amp; 0       &amp; b_{2,0} &amp; b_{2,1} &amp; b_{2,2}&amp;0&amp;0&amp;0&amp;0\\
+ b_{1,0} &amp; b_{1,1} &amp; b_{1,2} &amp; b_{1,3} &amp; b_{2,0} &amp; b_{2,1} &amp; b_{2,2} &amp; b_{2,3}&amp;0&amp;0&amp;0&amp;0\\
+ b_{1,1} &amp; b_{1,2} &amp; b_{1,3} &amp;   0     &amp; b_{2,1} &amp; b_{2,2} &amp; b_{2,3} &amp;   0    &amp;0&amp;0&amp;0&amp;0\\
+\end{bmatrix}\]
+
+\[\text{col2im}(f, \text{size}=2, \text{stride}=2) = \begin{bmatrix}
+ r_{0,0} &amp; r_{0,2} &amp; r_{2,0} &amp; r_{2,2} \\
+ r_{0,1} &amp; r_{0,3} &amp; r_{2,1} &amp; r_{2,3} \\
+ r_{1,0} &amp; r_{1,2} &amp;    0    &amp;    0    \\
+ r_{1,1} &amp; r_{1,3} &amp;    0    &amp;    0    \\
+
+ g_{0,0} &amp; g_{0,2} &amp; g_{2,0} &amp; g_{2,2} \\
+ g_{0,1} &amp; g_{0,3} &amp; g_{2,1} &amp; g_{2,3} \\
+ g_{1,0} &amp; g_{1,2} &amp;    0    &amp;    0    \\
+ g_{1,1} &amp; g_{1,3} &amp;    0    &amp;    0    \\
+
+ b_{0,0} &amp; b_{0,2} &amp; b_{2,0} &amp; b_{2,2} \\
+ b_{0,1} &amp; b_{0,3} &amp; b_{2,1} &amp; b_{2,3} \\
+ b_{1,0} &amp; b_{1,2} &amp;    0    &amp;    0    \\
+ b_{1,1} &amp; b_{1,3} &amp;    0    &amp;    0    \\
+\end{bmatrix}\]
+
+<h4 id="for-your-homework">For Your Homework</h4>
+
+<p>For your homework I would like you to pad to keep the output the same spatial dimensions as the input for stride-1 convolutions and err on the side of making the output bigger when the stride doesn’t evenly divide the input dimensions. In general the output size, as given in the code, should be:</p>
+
+\[\text{out} = (\text{in} - 1) / \text{stride} + 1\]
+
+<p>I would like you to start convolutions with the filter “centered” on the top-left pixel of the image. The center of an odd size filter is the center pixel while the center of an even size filter is the top-left of the four pixel square at the center. Here’s an example of a \(4 \times 4\) filter with the center marked with an “X”.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>|o|o|o|o|
+|o|X|o|o|
+|o|o|o|o|
+|o|o|o|o|
+</code></pre></div></div>
+
+<h2 id="maxpool-layer">Maxpool Layer</h2>
+
+<p>Images are big. After extracting features using one or more convolutional layers we often don’t need the full spatial resolution of the original image. One option is to use strided convolutions to downsample the image. However, one thing we may want is to aggregate over areas in the image by amplifying any signal present in an area. Maxpooling layers look at local neighborhoods in the input and set the output to be the maximum value. Each channel is processed separately so the output has the same number of channels as the input.</p>
+
+<ul>
+  <li>Input: A image/feature map</li>
+  <li>Processing: Pooling operation over local area</li>
+  <li>Output: An downsampled version of the feature map</li>
+</ul>
+
+<h3 id="parameters-1">Parameters</h3>
+
+<ul>
+  <li><strong>size</strong>: spatial dimensions of the pooling operation</li>
+  <li><strong>stride</strong>: amount to downsample the image</li>
+</ul>
+
+<h3 id="forward">Forward</h3>
+
+<p>Starting at the first pixel look at a \(\text{size} \times \text{size}\) window centered at that pixel, set the output to be the maximum in that window. Slide the center of the window over by “stride” and repeat. Each channel is processed independently.</p>
+
+<h3 id="backward">Backward</h3>
+
+<p>Using the saved input to the layer run the same process as above but instead of propagating forward backward propagate the partial derivatives \(\frac{dL}{dy}\) back to the index in \(\frac{dL}{dx}\) where the maximum value was in the original input \(x\).</p>
+
+<h3 id="implementation">Implementation</h3>
+
+<p>Maxpooling layers are similar to convolutional layers in that you are processing local areas of the input. Similar to your im2col you should “pad” the input to maintain correct sizing (\(\text{in} = (\text{out} - 1)/\text{stride} + 1\)). Unlike convolutional layers you shouldn’t zero pad, some patches may all be negative and we want the maximum of the values in the image.</p>
+
+
+
+
+<script>
+mermaid.initialize({
+    startOnLoad:false,
+    cloneCssStyles: false,
+    flowchart:{
+        curve:'basis',
+        htmlLabels:true,
+    },
+    theme: 'default',
+    themeVariables:{
+        edgeLabelBackground:'#fff',
+    },
+});
+
+window.onload = function(){
+            mermaid.init();
+
+            window.MathJax = {
+              tex: {
+                macros: {
+                  d: "{\\nabla}",
+                  x: "{\\times}",
+                }
+              }
+            };
+
+            (function () {
+              var script = document.createElement('script');
+              script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+              script.async = true;
+              document.head.appendChild(script);
+            })();
+    
+};
+</script>
+
+  </body>
+</html>

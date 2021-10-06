@@ -1,0 +1,203 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>02 - Neural Networks</title>
+    <style>
+        foreignObject {overflow:visible}
+        img {max-width:100%;
+        vertical-align:middle;}
+
+    </style>
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script src="https://www.desmos.com/api/v1.5/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+  </head>
+  <body>
+    <h1 id="chapter-2-neural-networks">Chapter 2: Neural Networks</h1>
+
+<p>We’ve covered linear regression and logistic regression for solving regression and classification tasks. Both of these models use a linear combination of input features to produce their output (by taking the dot product of weights with input features). Their simplicity means they can only solve simple problems, for instance logistic regression can only solve classification problems where the data is linearly separable. Consider the following data. Just using a linear model there is no way to separate the two classes. However some very simple feature engineering (adding the new feature \(x^2 + y^2\)) makes the classification task trivial.</p>
+
+<figure class="image">
+  <img src="../figs/x2y2.png" alt="Two charts of data sets. On the left a scatter plot of points on x-y plane. Points are either red or black. Red points are clustered near the origin, black points form a rough circle around the red points, centered at the origin but all some distance away. On the right a scatter plot of the same data but instead of the y-axis it shows x^2 + y^2. With this change of coordinate system there is a clear line that divides the points." data-attribution="" />
+  <figcaption>Feature engineering is important to make certain machine learning problems tractable. The original data is not linearly separable but adding an additional feature makes it separable.</figcaption>
+</figure>
+
+<p>Feature engineering is important for ML models to work well but it’s not always as obvious what the right features are. What if we could learn feature engineering instead of designing it by hand? (that is, after all, what we’re here for)</p>
+
+<h2 id="feature-extraction-built-in">Feature Extraction Built In</h2>
+
+<p>Instead of running a linear model directly on our input features we can add an additional step of processing. First our model recombines the input features \(x\) into transformed features \(y\). Then we can run a linear model on these new features. This is the basic idea behind neural networks!</p>
+
+<h4 id="neural-network-example">Neural Network Example</h4>
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph LR
+    subgraph Feature Extraction
+    x1(("\(x_1\)")) --&gt;|"\(w_1\)"| h1(("\(h_1\)"))
+    x2(("\(x_2\)")) --&gt;|"\(w_2\)"| h1
+    x1 --&gt; |"\(w_3\)"| h2(("\(h_2\)"))
+    x2 --&gt; |"\(w_4\)"| h2
+    x1 --&gt; |"\(w_5\)"| h3(("\(h_3\)"))
+    x2 --&gt; |"\(w_6\)"| h3
+    end
+    subgraph Linear Model
+    h1 --&gt; |"\(v_1\)"| y(("\(y\)"))
+    h2 --&gt; |"\(v_2\)"| y
+    h3 --&gt; |"\(v_3\)"| y
+    end
+
+</div>
+</div>
+<figcaption>An example, 2 layer neural network. The first layer is computed as \(h = xw\). The second layer is computed as \(y = hv\). <a target="_blank" href="../chartsrc?src=%0Agraph+LR%0A++++subgraph+Feature+Extraction%0A++++x1%28%28%22%5C%28x_1%5C%29%22%29%29+--%3E%7C%22%5C%28w_1%5C%29%22%7C+h1%28%28%22%5C%28h_1%5C%29%22%29%29%0A++++x2%28%28%22%5C%28x_2%5C%29%22%29%29+--%3E%7C%22%5C%28w_2%5C%29%22%7C+h1%0A++++x1+--%3E+%7C%22%5C%28w_3%5C%29%22%7C+h2%28%28%22%5C%28h_2%5C%29%22%29%29%0A++++x2+--%3E+%7C%22%5C%28w_4%5C%29%22%7C+h2%0A++++x1+--%3E+%7C%22%5C%28w_5%5C%29%22%7C+h3%28%28%22%5C%28h_3%5C%29%22%29%29%0A++++x2+--%3E+%7C%22%5C%28w_6%5C%29%22%7C+h3%0A++++end%0A++++subgraph+Linear+Model%0A++++h1+--%3E+%7C%22%5C%28v_1%5C%29%22%7C+y%28%28%22%5C%28y%5C%29%22%29%29%0A++++h2+--%3E+%7C%22%5C%28v_2%5C%29%22%7C+y%0A++++h3+--%3E+%7C%22%5C%28v_3%5C%29%22%7C+y%0A++++end%0A">(source)</a></figcaption>
+</figure>
+
+<h3 id="how-powerful-is-this-model">How Powerful Is This Model?</h3>
+
+<p>In our small example above we have a model that maps \(x \to y\) through hidden layer \(h\). However, all we are doing is weighted sums, which can be written as matrix multiplication: \(h = xw\) and \(y = hv\):</p>
+
+\[\begin{bmatrix}x_1 &amp; x_2\end{bmatrix}
+\begin{bmatrix}w_1 &amp; w_3 &amp; w_5 \\
+w_2 &amp; w_4 &amp; w_6 \\
+\end{bmatrix} =  \begin{bmatrix}h_1 &amp; h_2 &amp; h_3 \end{bmatrix}\]
+
+\[\begin{bmatrix}h_1 &amp; h_2 &amp; h_3\end{bmatrix}
+\begin{bmatrix}v_1 \\
+v_2\\
+v_3\\
+\end{bmatrix} =  \begin{bmatrix}y \end{bmatrix}\]
+
+<p>But wait a second, matrix multiplication is commutative so if \(y = hv\) and \(h = xw\) then \(y = x(wv)\), where \(wv =
+\begin{bmatrix}w_1 &amp; w_3 &amp; w_5 \\
+w_2 &amp; w_4 &amp; w_6 \\
+\end{bmatrix}\begin{bmatrix}v_1 \\
+v_2\\
+v_3\\
+\end{bmatrix} = \begin{bmatrix}w_1v_1 + w_3v_2 + w_5v_3 \\
+w_2v_1 + w_4v_2 + w_6v_3\\
+\end{bmatrix}\)</p>
+
+<p>So our new model is still just a linear model! That’s not good haha. How can we make our new model more powerful so we are actually doing some real feature extraction?</p>
+
+<h3 id="activation-functions">Activation Functions</h3>
+
+<p>At our intermediate or <strong>hidden</strong> layer we’ll add on an additional function \(f\) known as an <strong>activation function</strong>. This function should be non-linear because we want our feature extraction to be non-linear (otherwise we’ve just constructed one big linear model). The activation function is usually applied element-wise to the vector of weighted sums or neurons. Our new forward propagation will look like:</p>
+
+\[h = f(xw)\]
+
+\[y = hv\]
+
+<p>This new model is definitely non-linear (if we picked a non-linear activation) but how powerful is it?</p>
+
+<h3 id="the-universal-approximation-theorem">The Universal Approximation Theorem</h3>
+
+<p>The new neural network is REALLY powerful. All powerful in fact*.</p>
+
+<p>Ok, not actually ALL powerful but the Universal Approximation Theorem says that given some assumptions and constraints, a neural network with just one hidden layer of sufficient number of neurons can approximate any function inside a bounded domain. Formally if:</p>
+
+<ul>
+  <li>\(\phi\): non-constant, bounded, monotonically increasing function</li>
+  <li>\(I_m\) m-dimensional unit hypercube</li>
+</ul>
+
+<p>Then a 1-layer neural network with \(\phi\) activation function can model any continuous function \(f: I_m \to \mathbb{R}\)</p>
+
+<p>Granted this 1-layer network may need a very large hidden layer, the proof basically relies on approximating the function piecewise in very small portions of it’s domain. But in practice this isn’t how neural networks learn and they still function as very good general purpose function approximators. So now that we know neural networks are all powerful, how do we train them?</p>
+
+<h2 id="training-neural-networks-with-backpropagation">Training Neural Networks With Backpropagation</h2>
+
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph LR
+    x1(("\(x_1\)")) --&gt;|"\(w_1\)"| h1(("\(h_1\)"))
+    x2(("\(x_2\)")) --&gt;|"\(w_2\)"| h1
+    x1 --&gt; |"\(w_3\)"| h2(("\(h_2\)"))
+    x2 --&gt; |"\(w_4\)"| h2
+    x1 --&gt; |"\(w_5\)"| h3(("\(h_3\)"))
+    x2 --&gt; |"\(w_6\)"| h3
+    h1 --&gt; |"\(v_1\)"| y(("\(y\)"))
+    h2 --&gt; |"\(v_2\)"| y
+    h3 --&gt; |"\(v_3\)"| y
+
+</div>
+</div>
+<figcaption>Neural network again for reference <a target="_blank" href="../chartsrc?src=%0Agraph+LR%0A++++x1%28%28%22%5C%28x_1%5C%29%22%29%29+--%3E%7C%22%5C%28w_1%5C%29%22%7C+h1%28%28%22%5C%28h_1%5C%29%22%29%29%0A++++x2%28%28%22%5C%28x_2%5C%29%22%29%29+--%3E%7C%22%5C%28w_2%5C%29%22%7C+h1%0A++++x1+--%3E+%7C%22%5C%28w_3%5C%29%22%7C+h2%28%28%22%5C%28h_2%5C%29%22%29%29%0A++++x2+--%3E+%7C%22%5C%28w_4%5C%29%22%7C+h2%0A++++x1+--%3E+%7C%22%5C%28w_5%5C%29%22%7C+h3%28%28%22%5C%28h_3%5C%29%22%29%29%0A++++x2+--%3E+%7C%22%5C%28w_6%5C%29%22%7C+h3%0A++++h1+--%3E+%7C%22%5C%28v_1%5C%29%22%7C+y%28%28%22%5C%28y%5C%29%22%29%29%0A++++h2+--%3E+%7C%22%5C%28v_2%5C%29%22%7C+y%0A++++h3+--%3E+%7C%22%5C%28v_3%5C%29%22%7C+y%0A">(source)</a></figcaption>
+</figure>
+
+<p>The last layer of our network is trained just like linear regression or logistic regression. After calculating the loss we take the derivative with respect to the output, \(\frac{dL}{dy}\). Then we can multiply by the values of \(h\) to get the derivative of the loss with respect to the weights \(v\), i.e:</p>
+
+\[\begin{align}
+\frac{dL}{dv_1} &amp;= h_1\frac{dL}{dy}  \\
+\frac{dL}{dv_2} &amp;= h_2\frac{dL}{dy}  \\
+\frac{dL}{dv_3} &amp;= h_3\frac{dL}{dy}  \\
+\end{align}\]
+
+<p>We can also just write this in matrix notation:</p>
+
+\[\frac{dL}{dv} = 
+\begin{bmatrix}
+h_1\\
+h_2\\
+h_3\\
+\end{bmatrix}
+\begin{bmatrix}
+\frac{dL}{dy}
+\end{bmatrix} = h^T \frac{dL}{dy}\]
+
+<p>This is just the same math we used before. Now comes the tricky part. We want to calculate the derivative of the loss with respect to weights \(w\), \(\frac{dL}{dw}\) which we only know how to do if we have \(\frac{dL}{dh}\). So first we’ll <strong>backpropagate</strong> the loss from \(y\) to \(h\).</p>
+
+<p>Consider the following:</p>
+
+\[\frac{dL}{dh_1} = \frac{dL}{\cancel{dy}} \frac{\cancel{dy}}{dh_1} = \frac{dL}{dy} \frac{d}{dh_1}(h_1v_1 + h_2v_2 + h_3v_3) = \frac{dL}{dy}v_1\]
+
+<p>We are “backpropagating” the loss from \(y\), through weight \(v_1\), to \(h_1\). We can do this using matrix operations as well for all of \(h\):</p>
+
+\[\frac{dL}{dh} = \frac{dL}{dy}v^T\]
+
+
+
+
+<script>
+mermaid.initialize({
+    startOnLoad:false,
+    cloneCssStyles: false,
+    flowchart:{
+        curve:'basis',
+        htmlLabels:true,
+    },
+    theme: 'default',
+    themeVariables:{
+        edgeLabelBackground:'#fff',
+    },
+});
+
+window.onload = function(){
+            mermaid.init();
+
+            window.MathJax = {
+              tex: {
+                macros: {
+                  d: "{\\nabla}",
+                  x: "{\\times}",
+                }
+              }
+            };
+
+            (function () {
+              var script = document.createElement('script');
+              script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+              script.async = true;
+              document.head.appendChild(script);
+            })();
+    
+};
+</script>
+
+  </body>
+</html>

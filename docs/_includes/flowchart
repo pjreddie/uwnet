@@ -1,0 +1,7 @@
+<figure class="flowchart">
+<div id="{{ include.id }}"></div>
+<script>
+var diagram = flowchart.parse("{{ include.chart }}");
+</script>
+<figcaption>{{ include.caption }} <a target="_blank" href="../chartsrc?src={{ include.chart | url_encode }}">(source)</a></figcaption>
+</figure>

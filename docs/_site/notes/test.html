@@ -1,0 +1,164 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Test Space</title>
+    <style>
+        foreignObject {overflow:visible}
+        img {max-width:100%;
+        vertical-align:middle;}
+
+    </style>
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script src="https://www.desmos.com/api/v1.5/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+  </head>
+  <body>
+    <h2 id="neural-network-example">Neural Network Example</h2>
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph LR
+    x1(("\(x_1\)")) --&gt;|"\(w_1\)"| y1(("\(y_1\)"))
+    x2(("\(x_2\)")) --&gt;|"\(w_2\)"| y1
+    x3(("\(x_3\)")) --&gt;|"\(w_3\)"| y1
+    x4(("\(x_4\)")) --&gt;|"\(w_4\)"| y1
+    x1 --&gt; |"\(w_5\)"| y2(("\(y_1\)"))
+    x2 --&gt; |"\(w_6\)"| y2
+    x3 --&gt; |"\(w_7\)"| y2
+    x4 --&gt; |"\(w_8\)"| y2
+    y1 --&gt; |"\(v_1\)"| z(("\(z\)"))
+    y2 --&gt; |"\(v_2\)"| z
+
+</div>
+</div>
+<figcaption>An example, 2 layer neural network. The first layer is computed as \(y = wx\). The second layer is computed as \(z = vy\) <a target="_blank" href="../chartsrc?src=%0Agraph+LR%0A++++x1%28%28%22%5C%28x_1%5C%29%22%29%29+--%3E%7C%22%5C%28w_1%5C%29%22%7C+y1%28%28%22%5C%28y_1%5C%29%22%29%29%0A++++x2%28%28%22%5C%28x_2%5C%29%22%29%29+--%3E%7C%22%5C%28w_2%5C%29%22%7C+y1%0A++++x3%28%28%22%5C%28x_3%5C%29%22%29%29+--%3E%7C%22%5C%28w_3%5C%29%22%7C+y1%0A++++x4%28%28%22%5C%28x_4%5C%29%22%29%29+--%3E%7C%22%5C%28w_4%5C%29%22%7C+y1%0A++++x1+--%3E+%7C%22%5C%28w_5%5C%29%22%7C+y2%28%28%22%5C%28y_1%5C%29%22%29%29%0A++++x2+--%3E+%7C%22%5C%28w_6%5C%29%22%7C+y2%0A++++x3+--%3E+%7C%22%5C%28w_7%5C%29%22%7C+y2%0A++++x4+--%3E+%7C%22%5C%28w_8%5C%29%22%7C+y2%0A++++y1+--%3E+%7C%22%5C%28v_1%5C%29%22%7C+z%28%28%22%5C%28z%5C%29%22%29%29%0A++++y2+--%3E+%7C%22%5C%28v_2%5C%29%22%7C+z%0A">(source)</a></figcaption>
+</figure>
+
+<h2 id="loss-functions">Loss Functions</h2>
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph LR
+    a["model parameters <br /> (weights)"] --&gt; model
+    subgraph Loss Function
+    model --&gt; | predictions | error
+    data --&gt; | labels | error
+    data --&gt; | features | model
+    end
+    error --&gt; loss
+
+</div>
+</div>
+<figcaption>The loss function takes as input the parameters to the model. It uses those parameters to calculate predictions based on features from the data. It compares these predictions to the labels from that data and outputs the calculated loss. <a target="_blank" href="../chartsrc?src=%0Agraph+LR%0A++++a%5B%22model+parameters+%3Cbr+%2F%3E+%28weights%29%22%5D+--%3E+model%0A++++subgraph+Loss+Function%0A++++model+--%3E+%7C+predictions+%7C+error%0A++++data+--%3E+%7C+labels+%7C+error%0A++++data+--%3E+%7C+features+%7C+model%0A++++end%0A++++error+--%3E+loss%0A">(source)</a></figcaption>
+</figure>
+
+<h2 id="forward-propagation-through-connected-layer">Forward Propagation Through Connected Layer</h2>
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph LR
+    x["\(x\)"] --&gt; wx["\(wx\)"]
+    subgraph Connected Layer
+    w["\(w\)"] --&gt; wx
+    wx --&gt; wxb["\(wx+b\)"]
+    b["\(b\)"] --&gt; wxb
+    end
+    wxb --&gt; y["\(y\)"]
+
+
+</div>
+</div>
+<figcaption>Forward propagation through a connected layer. The input \(x\) is multiplied by the weights \(w\) and added to the biases \(b\). The output is \(y = wx + b\) <a target="_blank" href="../chartsrc?src=%0Agraph+LR%0A++++x%5B%22%5C%28x%5C%29%22%5D+--%3E+wx%5B%22%5C%28wx%5C%29%22%5D%0A++++subgraph+Connected+Layer%0A++++w%5B%22%5C%28w%5C%29%22%5D+--%3E+wx%0A++++wx+--%3E+wxb%5B%22%5C%28wx%2Bb%5C%29%22%5D%0A++++b%5B%22%5C%28b%5C%29%22%5D+--%3E+wxb%0A++++end%0A++++wxb+--%3E+y%5B%22%5C%28y%5C%29%22%5D%0A%0A">(source)</a></figcaption>
+</figure>
+
+<h2 id="backward-propagation-through-connected-layer">Backward Propagation Through Connected Layer</h2>
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph RL
+    dLdy["\(\frac{d L}<br />{d y}\)"] --&gt; dLdwxb["\(\frac{d L}<br />{d wx + b}\)"]
+    subgraph Connected Layer
+    dLdwxb --&gt; |aggregate| dLdb["\(\frac{d L}<br />{d b}\)"]
+    dLdwxb --&gt; dLdwx["\(\frac{d L}<br />{d wx}\)"]
+    dLdwx --&gt; dLdx["\(\frac{d L}<br />{d x}\)"]
+    dLdwx --&gt; dLdw["\(\frac{d L}<br />{d w}\)"]
+    w["\(w\)"] --&gt; |"\(\frac{d wx}<br />{d x}\)"| dLdx
+    end
+    x["\(x\)"] --&gt; |"\(\frac{d wx}<br />{d w}\)"|dLdw
+    dLdx --&gt; dLdxout["\(\frac{d L}<br />{d x}\)"]
+
+</div>
+</div>
+<figcaption>Backward propagation through a connected layer. The input is the \(\d_x\) <a target="_blank" href="../chartsrc?src=%0Agraph+RL%0A++++dLdy%5B%22%5C%28%5Cfrac%7Bd+L%7D%3Cbr+%2F%3E%7Bd+y%7D%5C%29%22%5D+--%3E+dLdwxb%5B%22%5C%28%5Cfrac%7Bd+L%7D%3Cbr+%2F%3E%7Bd+wx+%2B+b%7D%5C%29%22%5D%0A++++subgraph+Connected+Layer%0A++++dLdwxb+--%3E+%7Caggregate%7C+dLdb%5B%22%5C%28%5Cfrac%7Bd+L%7D%3Cbr+%2F%3E%7Bd+b%7D%5C%29%22%5D%0A++++dLdwxb+--%3E+dLdwx%5B%22%5C%28%5Cfrac%7Bd+L%7D%3Cbr+%2F%3E%7Bd+wx%7D%5C%29%22%5D%0A++++dLdwx+--%3E+dLdx%5B%22%5C%28%5Cfrac%7Bd+L%7D%3Cbr+%2F%3E%7Bd+x%7D%5C%29%22%5D%0A++++dLdwx+--%3E+dLdw%5B%22%5C%28%5Cfrac%7Bd+L%7D%3Cbr+%2F%3E%7Bd+w%7D%5C%29%22%5D%0A++++w%5B%22%5C%28w%5C%29%22%5D+--%3E+%7C%22%5C%28%5Cfrac%7Bd+wx%7D%3Cbr+%2F%3E%7Bd+x%7D%5C%29%22%7C+dLdx%0A++++end%0A++++x%5B%22%5C%28x%5C%29%22%5D+--%3E+%7C%22%5C%28%5Cfrac%7Bd+wx%7D%3Cbr+%2F%3E%7Bd+w%7D%5C%29%22%7CdLdw%0A++++dLdx+--%3E+dLdxout%5B%22%5C%28%5Cfrac%7Bd+L%7D%3Cbr+%2F%3E%7Bd+x%7D%5C%29%22%5D%0A">(source)</a></figcaption>
+</figure>
+
+<h2 id="backward-propagation-through-connected-layer-1">Backward Propagation Through Connected Layer</h2>
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph RL
+    dLdy["\(\d_y L\)"] --&gt; dLdwxb["\(\d_{wx + b}L\)"]
+    subgraph Connected Layer
+    dLdwxb --&gt; |aggregate| dLdb["\(\d_{b}L\)"]
+    dLdwxb --&gt; dLdwx["\(\d_{wx}L\)"]
+    dLdwx --&gt; dLdx["\(\d_{x}L\)"]
+    dLdwx --&gt; dLdw["\(\d_{w}L\)"]
+    w["\(w\)"] --&gt; |"\(\d_{x}wx = w^T\)"| dLdx
+    end
+    x["\(x\)"] --&gt; |"\(\d_{w}wx = x^T\)"|dLdw
+    dLdx --&gt; dLdxout["\(\d_{x}L\)"]
+
+</div>
+</div>
+<figcaption>Backward propagation through a connected layer. The input is the gradient of the loss with respect to \(y\): \(\d_y L\) which is equivalent to the gradient of the loss with respect to the weighted sum: \(\d_{wx+b} L\). By aggregating over examples in the batch we get the gradient with respect to the bias: \(\d_bL\). We also know the equality \(\d_{wx + b}L = \d_{wx}L\). <a target="_blank" href="../chartsrc?src=%0Agraph+RL%0A++++dLdy%5B%22%5C%28%5Cd_y+L%5C%29%22%5D+--%3E+dLdwxb%5B%22%5C%28%5Cd_%7Bwx+%2B+b%7DL%5C%29%22%5D%0A++++subgraph+Connected+Layer%0A++++dLdwxb+--%3E+%7Caggregate%7C+dLdb%5B%22%5C%28%5Cd_%7Bb%7DL%5C%29%22%5D%0A++++dLdwxb+--%3E+dLdwx%5B%22%5C%28%5Cd_%7Bwx%7DL%5C%29%22%5D%0A++++dLdwx+--%3E+dLdx%5B%22%5C%28%5Cd_%7Bx%7DL%5C%29%22%5D%0A++++dLdwx+--%3E+dLdw%5B%22%5C%28%5Cd_%7Bw%7DL%5C%29%22%5D%0A++++w%5B%22%5C%28w%5C%29%22%5D+--%3E+%7C%22%5C%28%5Cd_%7Bx%7Dwx+%3D+w%5ET%5C%29%22%7C+dLdx%0A++++end%0A++++x%5B%22%5C%28x%5C%29%22%5D+--%3E+%7C%22%5C%28%5Cd_%7Bw%7Dwx+%3D+x%5ET%5C%29%22%7CdLdw%0A++++dLdx+--%3E+dLdxout%5B%22%5C%28%5Cd_%7Bx%7DL%5C%29%22%5D%0A">(source)</a></figcaption>
+</figure>
+
+
+
+
+<script>
+mermaid.initialize({
+    startOnLoad:false,
+    cloneCssStyles: false,
+    flowchart:{
+        curve:'basis',
+        htmlLabels:true,
+    },
+    theme: 'default',
+    themeVariables:{
+        edgeLabelBackground:'#fff',
+    },
+});
+
+window.onload = function(){
+            mermaid.init();
+
+            window.MathJax = {
+              tex: {
+                macros: {
+                  d: "{\\nabla}",
+                  x: "{\\times}",
+                }
+              }
+            };
+
+            (function () {
+              var script = document.createElement('script');
+              script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+              script.async = true;
+              document.head.appendChild(script);
+            })();
+    
+};
+</script>
+
+  </body>
+</html>

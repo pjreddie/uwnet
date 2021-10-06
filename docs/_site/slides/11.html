@@ -1,0 +1,833 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Deep Learning - 11 - Training and Sampling for Sequences</title>
+    <style>
+        foreignObject {overflow:visible}
+        img {max-width:100%;
+        vertical-align:middle;}
+
+    </style>
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script src="https://www.desmos.com/api/v1.5/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+  </head>
+  <body>
+            <style>
+        table, th, td{
+            border: 1px solid black;
+            border-collapse:collapse;
+            text-align:center;
+        }
+        th{
+            padding:.2em 1em;
+        }
+        td{
+            padding:.2em .2em;
+        }
+        img{
+            max-height:500px;
+        }
+        figure{
+            padding:.5em;
+            border:1px solid black;
+            position:relative
+        }
+        figcaption{
+            position: absolute;
+            left:.5em;
+            top: -.9em;
+            border: 1px solid black;
+            padding:0em .2em;
+            background-color:white;
+        }
+
+        .remark-code{
+            font-size:inherit;
+        }
+        .remark-slide-number{
+            bottom:20px;
+            right:36px;
+            font-size:18px;
+        }
+        .footnote{
+            border:4px solid black;
+            position:absolute;
+            left:35px;
+            bottom:2px;
+            font-size:18px;
+            background-color:#fff;
+            padding:.2em;
+        }
+        .remark-slide-content{
+            background-image:url('../figs/bg.png');
+            background-position:top left;
+            background-size: contain;
+            padding:1em 2em 1em 2em;
+            overflow:hidden;
+            font-size:24px;
+        }
+        h1 {
+            margin-block-start: .1em;
+        }
+        img {
+            max-width:100%;
+            vertical-align:middle;
+        }
+        ul {
+            margin-block-start:0em;
+        }
+        /*figure {max-width:100%}*/
+        .small {font-size:18px}
+        .big {font-size:32px;}
+        /*.mermaidsvg {max-width:40%;}*/
+        .remark-slide-content figure{
+            margin:0;
+        }
+
+        .col30{float:left; width:30%}
+        .col40{float:left; width:40%}
+        .col50{float:left; width:50%}
+        .col60{float:left; width:60%}
+        .col70{float:left; width:70%}
+        .clear{clear:both;}
+        .height100 img,.height100 svg{height:100px;}
+        .height200 img,.height200 svg{height:200px;}
+        .height250 img,.height250 svg{height:250px;}
+        .height300 img,.height300 svg{height:300px;}
+        .height400 img,.height400 svg{height:400px;}
+        .height450 img,.height450 svg{height:450px;}
+        .height480 img,.height480 svg{height:480px;}
+        .height500 img,.height500 svg{height:500px;}
+        .box{
+            position:relative;
+            border:4px solid black;
+            padding:.2em;
+        }
+        .box .title{
+            position: absolute;
+            left:.5em;
+            top: -.9em;
+            border: 4px solid black;
+            padding:0em .2em;
+            background-color:white;
+        }
+</style>
+
+<textarea id="source">
+background-image: url('../figs/title.png')
+
+---
+class: center, middle
+
+# Chapter 11 - Training and Sampling for Sequences
+
+---
+
+#  Generating with RNNs
+
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph TB
+    x1["[start]"] --> r1[RNN]
+    r1 --> y1[1]
+
+</div>
+</div>
+<figcaption> <a target="_blank" href="../chartsrc?src=%0Agraph+TB%0A++++x1%5B%22%5Bstart%5D%22%5D+--%3E+r1%5BRNN%5D%0A++++r1+--%3E+y1%5B1%5D%0A">(source)</a></figcaption>
+</figure>
+
+
+Usually a special [start] token to begin generation
+
+Feed output into input of RNN at next time step
+
+    Generated: [start] 1
+
+---
+
+#  Generating with RNNs
+
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph TB
+    x1["[start]"] --> r1[RNN]
+    r1 --> y1[1]
+
+    x2[1] --> r2[RNN]
+    r2 --> y2[+]
+
+</div>
+</div>
+<figcaption> <a target="_blank" href="../chartsrc?src=%0Agraph+TB%0A++++x1%5B%22%5Bstart%5D%22%5D+--%3E+r1%5BRNN%5D%0A++++r1+--%3E+y1%5B1%5D%0A%0A++++x2%5B1%5D+--%3E+r2%5BRNN%5D%0A++++r2+--%3E+y2%5B%2B%5D%0A">(source)</a></figcaption>
+</figure>
+
+
+Usually a special [start] token to begin generation
+
+Feed output into input of RNN at next time step
+
+    Generated: [start] 1 +
+
+---
+
+#  Generating with RNNs
+
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph TB
+    x1["[start]"] --> r1[RNN]
+    r1 --> y1[1]
+
+    x2[1] --> r2[RNN]
+    r2 --> y2[+]
+
+    x3[+] --> r3[RNN]
+    r3 --> y3[1]
+
+</div>
+</div>
+<figcaption> <a target="_blank" href="../chartsrc?src=%0Agraph+TB%0A++++x1%5B%22%5Bstart%5D%22%5D+--%3E+r1%5BRNN%5D%0A++++r1+--%3E+y1%5B1%5D%0A%0A++++x2%5B1%5D+--%3E+r2%5BRNN%5D%0A++++r2+--%3E+y2%5B%2B%5D%0A%0A++++x3%5B%2B%5D+--%3E+r3%5BRNN%5D%0A++++r3+--%3E+y3%5B1%5D%0A">(source)</a></figcaption>
+</figure>
+
+
+Usually a special [start] token to begin generation
+
+Feed output into input of RNN at next time step
+
+    Generated: [start] 1 + 1
+
+---
+
+#  Generating with RNNs
+
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph TB
+    x1["[start]"] --> r1[RNN]
+    r1 --> y1[1]
+
+    x2[1] --> r2[RNN]
+    r2 --> y2[+]
+
+    x3[+] --> r3[RNN]
+    r3 --> y3[1]
+
+    x4[1] --> r4[RNN]
+    r4 --> y4[=]
+
+</div>
+</div>
+<figcaption> <a target="_blank" href="../chartsrc?src=%0Agraph+TB%0A++++x1%5B%22%5Bstart%5D%22%5D+--%3E+r1%5BRNN%5D%0A++++r1+--%3E+y1%5B1%5D%0A%0A++++x2%5B1%5D+--%3E+r2%5BRNN%5D%0A++++r2+--%3E+y2%5B%2B%5D%0A%0A++++x3%5B%2B%5D+--%3E+r3%5BRNN%5D%0A++++r3+--%3E+y3%5B1%5D%0A%0A++++x4%5B1%5D+--%3E+r4%5BRNN%5D%0A++++r4+--%3E+y4%5B%3D%5D%0A">(source)</a></figcaption>
+</figure>
+
+
+Usually a special [start] token to begin generation
+
+Feed output into input of RNN at next time step
+
+    Generated: [start] 1 + 1 =
+
+But wait, how are we even getting the output?
+
+---
+
+#  Generating with RNNs
+
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph TB
+    x1["[start]"] --> r1[RNN]
+
+    x2[1] --> r2[RNN]
+
+    x3[+] --> r3[RNN]
+
+    x4[1] --> r4[RNN]
+
+    x5[=] --> r5[RNN]
+    r5 --> y5[??]
+
+</div>
+</div>
+<figcaption> <a target="_blank" href="../chartsrc?src=%0Agraph+TB%0A++++x1%5B%22%5Bstart%5D%22%5D+--%3E+r1%5BRNN%5D%0A%0A++++x2%5B1%5D+--%3E+r2%5BRNN%5D%0A%0A++++x3%5B%2B%5D+--%3E+r3%5BRNN%5D%0A%0A++++x4%5B1%5D+--%3E+r4%5BRNN%5D%0A%0A++++x5%5B%3D%5D+--%3E+r5%5BRNN%5D%0A++++r5+--%3E+y5%5B%3F%3F%5D%0A">(source)</a></figcaption>
+</figure>
+
+
+Output is a probability distribution:
+`$$Pr(x_n \mid x_1, x_2, \dots x_{n-1})$$`
+
+| 0  | 1  | 2  | 3  | 4  | 5  | 6  | 7  | 8  | 9  | +  | -  | *  | /  | =  |
+|-----------------------------------------------------------|
+|0.05|0.1 |0.7 |0.05|0.05|0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.05|0.0 |0.0 |0.0 |
+
+---
+
+#  Take the Max
+
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph TB
+    x1["[start]"] --> r1[RNN]
+
+    x2[1] --> r2[RNN]
+
+    x3[+] --> r3[RNN]
+
+    x4[1] --> r4[RNN]
+
+    x5[=] --> r5[RNN]
+    r5 --> y5[??]
+
+</div>
+</div>
+<figcaption> <a target="_blank" href="../chartsrc?src=%0Agraph+TB%0A++++x1%5B%22%5Bstart%5D%22%5D+--%3E+r1%5BRNN%5D%0A%0A++++x2%5B1%5D+--%3E+r2%5BRNN%5D%0A%0A++++x3%5B%2B%5D+--%3E+r3%5BRNN%5D%0A%0A++++x4%5B1%5D+--%3E+r4%5BRNN%5D%0A%0A++++x5%5B%3D%5D+--%3E+r5%5BRNN%5D%0A++++r5+--%3E+y5%5B%3F%3F%5D%0A">(source)</a></figcaption>
+</figure>
+
+
+One option: take the max over possible next tokens
+
+| 0  | 1  | **2**  | 3  | 4  | 5  | 6  | 7  | 8  | 9  | +  | -  | *  | /  | =  |
+|-----------------------------------------------------------|
+|0.05|0.1 |**0.7** |0.05|0.05|0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.05|0.0 |0.0 |0.0 |
+
+
+    Generated: [start] 1 + 1 = 2
+
+---
+
+#  Problem with Max
+
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph TB
+    x1["[start]"] --> r1[RNN]
+    r1 --> y1[1]
+
+    x2[1] --> r2[RNN]
+    r2 --> y2[+]
+
+    x3[+] --> r3[RNN]
+    r3 --> y3[1]
+
+    x4[1] --> r4[RNN]
+    r4 --> y4[+]
+
+    x5[+] --> r5[RNN]
+    r5 --> y5[1]
+
+    x6[1] --> r6[RNN]
+    r6 --> y6[+]
+
+    x7[+] --> r7[RNN]
+    r7 --> y7[...]
+
+</div>
+</div>
+<figcaption> <a target="_blank" href="../chartsrc?src=%0Agraph+TB%0A++++x1%5B%22%5Bstart%5D%22%5D+--%3E+r1%5BRNN%5D%0A++++r1+--%3E+y1%5B1%5D%0A%0A++++x2%5B1%5D+--%3E+r2%5BRNN%5D%0A++++r2+--%3E+y2%5B%2B%5D%0A%0A++++x3%5B%2B%5D+--%3E+r3%5BRNN%5D%0A++++r3+--%3E+y3%5B1%5D%0A%0A++++x4%5B1%5D+--%3E+r4%5BRNN%5D%0A++++r4+--%3E+y4%5B%2B%5D%0A%0A++++x5%5B%2B%5D+--%3E+r5%5BRNN%5D%0A++++r5+--%3E+y5%5B1%5D%0A%0A++++x6%5B1%5D+--%3E+r6%5BRNN%5D%0A++++r6+--%3E+y6%5B%2B%5D%0A%0A++++x7%5B%2B%5D+--%3E+r7%5BRNN%5D%0A++++r7+--%3E+y7%5B...%5D%0A">(source)</a></figcaption>
+</figure>
+
+
+Problem: some tokens much more likely at all times (think: 'the', 'a', 'and', 'on', etc in text data)
+
+End up generating boring input, e.g.
+
+    Generated: 1 + 1 + 1 + 1 + ...
+
+---
+
+#  Sampling from RNNs
+
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph TB
+    x1["[start]"] --> r1[RNN]
+
+    x2[1] --> r2[RNN]
+
+    x3[+] --> r3[RNN]
+
+    x4[1] --> r4[RNN]
+
+    x5[=] --> r5[RNN]
+    r5 --> y5[4]
+
+</div>
+</div>
+<figcaption> <a target="_blank" href="../chartsrc?src=%0Agraph+TB%0A++++x1%5B%22%5Bstart%5D%22%5D+--%3E+r1%5BRNN%5D%0A%0A++++x2%5B1%5D+--%3E+r2%5BRNN%5D%0A%0A++++x3%5B%2B%5D+--%3E+r3%5BRNN%5D%0A%0A++++x4%5B1%5D+--%3E+r4%5BRNN%5D%0A%0A++++x5%5B%3D%5D+--%3E+r5%5BRNN%5D%0A++++r5+--%3E+y5%5B4%5D%0A">(source)</a></figcaption>
+</figure>
+
+
+Different option, sample from probability distribution randomly
+
+| 0  | 1  | 2  | 3  |**4**  | 5  | 6  | 7  | 8  | 9  | +  | -  | *  | /  | =  |
+|-----------------------------------------------------------|
+|0.05|0.1 |0.7 |0.05|**0.05**|0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.05|0.0 |0.0 |0.0 |
+
+
+    Generated: [start] 1 + 1 = 4
+
+---
+#  Sampling from RNNs
+
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph TB
+    x1["[start]"] --> r1[RNN]
+
+    x2[1] --> r2[RNN]
+
+    x3[+] --> r3[RNN]
+
+    x4[1] --> r4[RNN]
+
+    x5[=] --> r5[RNN]
+    r5 --> y5[4]
+
+    x6[4] --> r6[RNN]
+    r6 --> y6[-]
+
+</div>
+</div>
+<figcaption> <a target="_blank" href="../chartsrc?src=%0Agraph+TB%0A++++x1%5B%22%5Bstart%5D%22%5D+--%3E+r1%5BRNN%5D%0A%0A++++x2%5B1%5D+--%3E+r2%5BRNN%5D%0A%0A++++x3%5B%2B%5D+--%3E+r3%5BRNN%5D%0A%0A++++x4%5B1%5D+--%3E+r4%5BRNN%5D%0A%0A++++x5%5B%3D%5D+--%3E+r5%5BRNN%5D%0A++++r5+--%3E+y5%5B4%5D%0A%0A++++x6%5B4%5D+--%3E+r6%5BRNN%5D%0A++++r6+--%3E+y6%5B-%5D%0A">(source)</a></figcaption>
+</figure>
+
+
+Different option, sample from probability distribution randomly
+
+| 0  | 1  | 2  | 3  | 4  | 5  | 6  | 7  | 8  | 9  | +  | -  | *  | /  | =  |
+|-----------------------------------------------------------|
+|0.05 |0.0 |0.0 |0.05 |0.0 |0.0 |0.0 |0.1 |0.0 |0.0 |0.1 |**0.6** |0.0 |0.0 |0.0 |
+
+
+    Generated: [start] 1 + 1 = 4 - 
+
+---
+
+#  Sampling from RNNs
+
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph TB
+    x1["[start]"] --> r1[RNN]
+
+    x2[1] --> r2[RNN]
+
+    x3[+] --> r3[RNN]
+
+    x4[1] --> r4[RNN]
+
+    x5[=] --> r5[RNN]
+    r5 --> y5[4]
+
+    x6[4] --> r6[RNN]
+    r6 --> y6[-]
+
+    x7[-] --> r7[RNN]
+    r7 --> y7[2]
+
+</div>
+</div>
+<figcaption> <a target="_blank" href="../chartsrc?src=%0Agraph+TB%0A++++x1%5B%22%5Bstart%5D%22%5D+--%3E+r1%5BRNN%5D%0A%0A++++x2%5B1%5D+--%3E+r2%5BRNN%5D%0A%0A++++x3%5B%2B%5D+--%3E+r3%5BRNN%5D%0A%0A++++x4%5B1%5D+--%3E+r4%5BRNN%5D%0A%0A++++x5%5B%3D%5D+--%3E+r5%5BRNN%5D%0A++++r5+--%3E+y5%5B4%5D%0A%0A++++x6%5B4%5D+--%3E+r6%5BRNN%5D%0A++++r6+--%3E+y6%5B-%5D%0A%0A++++x7%5B-%5D+--%3E+r7%5BRNN%5D%0A++++r7+--%3E+y7%5B2%5D%0A">(source)</a></figcaption>
+</figure>
+
+
+Different option, sample from probability distribution randomly
+
+| 0  | 1  | 2  | 3  | 4  | 5  | 6  | 7  | 8  | 9  | +  | -  | *  | /  | =  |
+|-----------------------------------------------------------|
+|0.0 |0.05 |**0.9** |0.05 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |
+
+
+    Generated: [start] 1 + 1 = 4 - 2
+
+---
+#  Benefits of Sampling
+
+More diverse output!
+
+Usually safe when output is obvious (Pr > .9)
+
+Can generate synonymous statements:
+
+    The dog went to the park
+    The dog walked to the park
+    The dog trotted to the park
+    ...
+
+---
+#  Problem with Sampling
+
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph TB
+    x1["[start]"] --> r1[RNN]
+
+    x2[1] --> r2[RNN]
+
+    x3[+] --> r3[RNN]
+
+    x4[1] --> r4[RNN]
+
+    x5[=] --> r5[RNN]
+    r5 --> y5[4]
+
+    x6[4] --> r6[RNN]
+    r6 --> y6[-]
+
+    x7[-] --> r7[RNN]
+    r7 --> y7[2]
+
+</div>
+</div>
+<figcaption> <a target="_blank" href="../chartsrc?src=%0Agraph+TB%0A++++x1%5B%22%5Bstart%5D%22%5D+--%3E+r1%5BRNN%5D%0A%0A++++x2%5B1%5D+--%3E+r2%5BRNN%5D%0A%0A++++x3%5B%2B%5D+--%3E+r3%5BRNN%5D%0A%0A++++x4%5B1%5D+--%3E+r4%5BRNN%5D%0A%0A++++x5%5B%3D%5D+--%3E+r5%5BRNN%5D%0A++++r5+--%3E+y5%5B4%5D%0A%0A++++x6%5B4%5D+--%3E+r6%5BRNN%5D%0A++++r6+--%3E+y6%5B-%5D%0A%0A++++x7%5B-%5D+--%3E+r7%5BRNN%5D%0A++++r7+--%3E+y7%5B2%5D%0A">(source)</a></figcaption>
+</figure>
+
+
+Sometimes you make mistakes! Randomness can bite you
+
+| 0  | 1  | 2  | 3  | 4  | 5  | 6  | 7  | 8  | 9  | +  | -  | *  | /  | =  |
+|-----------------------------------------------------------|
+|0.0 |**0.05** |0.9 |0.05 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |0.0 |
+
+
+    Generated: [start] 1 + 1 = 4 - 1
+
+---
+#  Problem with Sampling
+
+Want a way to generate diverse output BUT
+
+Don't want it to be too out there (i.e. still want correct grammar/syntax/sentence structure, etc)
+
+---
+
+#  Solution: Beam Search
+
+Generate tokens via sampling to increase diversity
+
+Remember multiple possible generated options
+
+Prune unlikely options, expand more likely ones
+
+Return most likely option (or something smarter?)
+
+
+---
+
+#  Solution: Beam Search
+
+Generate tokens via sampling to increase diversity
+
+Remember multiple possible generated options
+
+Prune unlikely options, expand more likely ones
+
+Return most likely option (or something smarter?)
+
+
+---
+
+#  Beam Search Algorithm
+
+    beam_search(model, n, length)
+        beams = []
+        for i in 0..length:
+            new_beams = []
+            for beam in beams:
+                compute Pr(x | beam)
+                sample n items from x:
+                    new_beam = beam
+                    new_beam += sample
+                    new_beams.append(new_beam)
+            sort(new_beams)         # sort by sum of log prob
+            beams = new_beams[:n]   # only keep n total beams
+
+
+
+---
+
+# Beam Search
+
+    Prob 0.5: [start] 1
+    Prob 0.3: [start] 2
+    Prob 0.1: [start] 4
+
+---
+
+# Beam Search
+Expand
+
+              [start] 1 +
+              [start] 1 -
+              [start] 1 =
+              [start] 2 -
+              [start] 2 +
+              [start] 2 *
+              [start] 4 -
+              [start] 4 /
+              [start] 4 =
+
+---
+
+# Beam Search
+Evaluate
+
+    Prob 0.2: [start] 1 +
+    Prob 0.1: [start] 1 -
+    Prob 0.4: [start] 1 =
+    Prob 0.2: [start] 2 -
+    Prob 0.1: [start] 2 +
+    Prob 0.1: [start] 2 *
+    Prob 0.3: [start] 4 -
+    Prob 0.5: [start] 4 /
+    Prob 0.1: [start] 4 =
+
+---
+
+# Beam Search
+Prune
+
+    Prob 0.5: [start] 4 /
+    Prob 0.4: [start] 1 =
+    Prob 0.3: [start] 4 -
+
+---
+
+# Beam Search
+Expand
+
+              [start] 4 / 2
+              [start] 4 / 1
+              [start] 4 / 1
+              [start] 1 = 3
+              [start] 1 = 2
+              [start] 1 = 1
+              [start] 4 - 4
+              [start] 4 - 0
+              [start] 4 - 2
+
+.... etc.
+
+---
+
+# Temperature: Controlling the Randomness
+
+Remember, our model predicts unnormalized probabilities
+
+We take softmax to convert to probabilities
+
+`$$\sigma(x) = \frac{e^{x_i}}{\sum_j e^{x_j}}$$`
+
+| $$x$$     | 1    | -4     | 2      | 4      | 3      |
+|--------------------------------------------------------|
+|$$\sigma(x)$$|.0321 | .0002 | .0871 | .6438 | .2368 |
+
+No real "reason" this is the right end distribution. We may want to encourage diversity, make our distribution more random. Or we may want to focus only on most likely elements.
+
+---
+
+# Temperature: Controlling the Randomness
+
+Softmax with temperature parameter, first divide by temperature then apply softmax:
+
+`$$\sigma_t(x) = \frac{e^{x_i/t}}{\sum_j e^{x_j/t}}$$`
+
+| $$x$$     | 1    | -4     | 2      | 4      | 3      |
+|--------------------------------------------------------|
+|$$\sigma_1(x)$$|.0321 | .0002 | .0871 | .6438 | .2368 |
+
+
+---
+
+# Low Temperature: More Like Argmax
+
+Softmax with temperature parameter, first divide by temperature then apply softmax:
+
+`$$\sigma_t(x) = \frac{e^{x_i/t}}{\sum_j e^{x_j/t}}$$`
+
+| $$x$$     | 1    | -4     | 2      | 4      | 3      |
+|--------------------------------------------------------|
+|$$\sigma_1(x)$$|.0321 | .0002 | .0871 | .6438 | .2368 |
+|$$\sigma_{0.3}(x)$$|.0000|     .0000|     .0012|     .9643|     .0344 |
+
+
+---
+
+# High Temperature: More Uniform
+
+Softmax with temperature parameter, first divide by temperature then apply softmax:
+
+`$$\sigma_t(x) = \frac{e^{x_i/t}}{\sum_j e^{x_j/t}}$$`
+
+| $$x$$     | 1    | -4     | 2      | 4      | 3      |
+|--------------------------------------------------------|
+|$$\sigma_1(x)$$|.0321 | .0002 | .0871 | .6438 | .2368 |
+|$$\sigma_{0.3}(x)$$|.0000|     .0000|     .0012|     .9643|     .0344 |
+|$$\sigma_{10}(x)$$|.1893| .1148| .2092| .2555| .2312|
+
+---
+
+# Softmax Temperature
+
+Temperature doesn't effect ordering of elements, just the relative magnitude
+
+High temperature: more "random", less reliant on model output
+
+Low temperature: less "random", magnifies relative differences in model output
+
+| $$x$$     | 1    | -4     | 2      | 4      | 3      |
+|--------------------------------------------------------|
+|$$\sigma_1(x)$$|.0321 | .0002 | .0871 | .6438 | .2368 |
+|$$\sigma_{0.3}(x)$$|.0000|     .0000|     .0012|     .9643|     .0344 |
+|$$\sigma_{10}(x)$$|.1893| .1148| .2092| .2555| .2312|
+
+[Colab demo here!](https://colab.research.google.com/drive/1Q1AIGsizj3fGX3uao_jkygheyNfCz_q_?usp=sharing)
+
+---
+
+# Evaluating RNNs
+
+How do we evaluate our sequence models?
+
+One option: accuracy
+
+Given sequence `\(x_1, x_2, \dots, x_n\)` how often does our model predict ground truth label `\(x_{n+1}\)`
+
+However, often our models have a large vocabulary and there are ambiguities! Accuracy may be very small even for good models
+
+---
+
+# Evaluating RNNs
+
+Another option: likelihood
+
+Instead, measure the probability our model assigns to the ground truth:
+
+`$$ \text{likelihood} = \prod_{i} \Pr(x_i \mid x_1, x_2, \dots, x_{i-1})$$`
+
+However these probabilities are often quite small (especially with large vocabularies) and will underflow floats. So in practice often use log-likelihood:
+
+`$$ \text{log-likelihood} = \sum_{i} \log[ \Pr(x_i \mid x_1, x_2, \dots, x_{i-1})]$$`
+
+Sometimes instead of maximizing likelihood we want to minimize something so you can also think about negative log-likelihood (which is a common loss function).
+
+---
+
+# Negative log-likelihood and cross-entropy
+
+There's another term you may have heard of, entropy or cross-entropy. The cross-entropy between two probability distributions p and q is:
+
+`$$H(p,q) = - \sum_x p(x) \log q(x)$$`
+
+In our case we can think of p(x) as the ground truth labels and q(x) as our model predictions. Since our labels are one-hot encodings of the correct word/token, p(x) will be 1 if x is the next token and 0 for all other tokens, thus cross-entropy  is the same as our negative log-likelihood:
+
+`$$ H = \text{NLL} = - \sum_{i} \log[ \Pr(x_i \mid x_1, x_2, \dots, x_{i-1})]$$`
+
+---
+
+# Perplexity
+
+It seems like cross entropy or NLL would be fine for determining how good a model is. We use them for our loss function! But noooo, NLP people have to be special so they use something else called **perplexity**. 
+
+It's not even that different though, you just raise entropy to an exponent:
+
+`$$PP = 2^{\frac{1}{N} - \sum_i \log \Pr(x_i)} $$`
+
+but also you can caluculate it with a base `\(e\)`:
+
+`$$PP = e^{\frac{1}{N} - \sum_i \ln \Pr(x_i)} $$`
+
+Or if your model already calculates cross-entropy for it's loss function you can just raise that to a power:
+
+`$$PP = e^H $$`
+
+You can use likelihood or cross-entropy or perplexity. Just make sure if you compare to other models that you have the details consistent! (like what exponent, etc)
+
+</textarea>
+
+<script>
+    MathJax = {
+        skipStartupTypeset: true,
+        tex: {
+            macros: {
+                d: "{\\nabla}",
+                t: "\\tilde",
+                x: "{\\times}",
+            }
+        },
+        options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'annotation', 'annotation-xml']
+        },
+    };
+</script>
+<script type="text/javascript" id="MathJax-script" async
+  src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'>
+</script>
+
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>
+window.onload = function(){
+
+    mermaid.initialize({
+        startOnLoad:false,
+        cloneCssStyles: false,
+        flowchart:{
+            //useMaxWidth:false,
+            curve:'basis',
+            htmlLabels:true,
+        },
+        theme: 'default',
+        themeVariables:{
+            edgeLabelBackground:'#fff',
+        },
+    });
+
+
+    var slideshow = remark.create({
+        ratio: '16:9',
+        navigation: {scroll: false,},
+    });
+
+    function initSlide() {
+        var diagrams = document.querySelectorAll('.remark-visible .mermaid');
+        for(var diagram of diagrams){
+            mermaid.init(undefined, diagram);
+        }
+        var slide = document.querySelectorAll('.remark-visible');
+        MathJax.typeset(slide);
+    }
+    slideshow.on('afterShowSlide', initSlide);
+    initSlide();
+};
+
+</script>
+
+
+  </body>
+</html>

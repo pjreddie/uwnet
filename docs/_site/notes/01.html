@@ -1,0 +1,701 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>01 - Machine Learning Review</title>
+    <style>
+        foreignObject {overflow:visible}
+        img {max-width:100%;
+        vertical-align:middle;}
+
+    </style>
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script src="https://www.desmos.com/api/v1.5/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+  </head>
+  <body>
+    <h1 id="chapter-1-machine-learning-review">Chapter 1: Machine Learning Review</h1>
+
+<p>So what exactly is deep learning, anyway? The phrase is fairly vague and means different things to different people depending on who you talk to. First, though, it’s good to have a basic understanding of typical machine learning tasks and pipelines to understand how deep learning is different.</p>
+
+<h2 id="machine-learning-tasks">Machine Learning Tasks</h2>
+
+<p>Machine learning broadly is the task of modelling data, usually with some kind of numerical or statistical model. The first key distinction between machine learning tasks is between <strong>supervised</strong> and <strong>unsupervised</strong> learning:</p>
+
+<ul>
+  <li><strong>Supervised learning</strong> is function approximation.
+    <ul>
+      <li>Input:
+        <ul>
+          <li>data \(X\)</li>
+          <li>labels \(Y\)</li>
+          <li>paired examples \((x,y)\)</li>
+        </ul>
+      </li>
+      <li>Assume:
+        <ul>
+          <li>there exists a function that maps from data to labels \(f: X \to Y\)</li>
+          <li>our paired examples \((x,y)\) satisfy \(f(x) = y\)</li>
+        </ul>
+      </li>
+      <li>Learn: approximation \(h\) such that \(h(x) \approx f(x)\)</li>
+    </ul>
+  </li>
+  <li><strong>Unsupervised learning</strong> is modelling the distribution of data
+    <ul>
+      <li>Input:
+        <ul>
+          <li>data \(X\)</li>
+        </ul>
+      </li>
+      <li>Learn:
+        <ul>
+          <li><strong>clusters</strong>: groupings of related data points</li>
+          <li>a transformation to a different feature space that preserves relationships between data points</li>
+          <li>a generating function or probability distribution \(g\) such that statistically \(X\) appears to be drawn from \(g\): \(X \sim g\)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="supervised-learning">Supervised Learning</h3>
+
+<p>Supervised learning encompasses algorithms for function approximation. Given a dataset \(X\) and a function \(f\) that takes elements of the dataset and produces output \(y = f(x)\), learn a function \(h\) such that \(h(x) \approx f(x)\).</p>
+
+<figure class="image">
+  <img src="../figs/mnist_digits.png" alt="Examples of MNIST digits. A 10x16 grid of handwritten digits, each row is a different digit 0-9." data-attribution="By Josef Steppan - Own work, CC BY-SA 4.0, https://commons.wikimedia.org/w/index.php?curid=64810040" />
+  <figcaption>Examples digits from the MNIST dataset, 28x28 pixel images of handwritten digits 0-9. MNIST is a common benchmark for computer vision tasks although it is a fairly easy to attain high accuracies.</figcaption>
+</figure>
+
+<p>This “labelling” function \(f\) can be obvious, like trying to predict the price of a car from attributes of the car like the make, model, year, mileage, condition, etc. In this case the true function \(f\) is the process a car salesman goes through to put a price on a car given those attributes. We are trying to create an approximate function \(h\) that takes the same attributes and assigns a similar price.</p>
+
+<p>For some tasks it can be more opaque, like predicting today’s weather from yesterday’s weather. In the case of the weather, there is an underlying physical process but it is not a clear function that only takes as input the past day’s weather. In reality, the weather is determined by a function (the unfolding of the laws of physics) acting on a set of data (the physical conditions of our planet).</p>
+
+<p>In the case of weather prediction, the physical conditions of the planet are what’s known as a <strong>latent variable</strong> or hidden variable. They are not fully observed or recorded but do affect the outcome. Our model can try to account for these variables or simply circumvent them. In either case we are trying to build an approximation of a function that doesn’t actually exist, we simply assume it does. There’s a lot of things like that in machine learning. Don’t let it bother you too much!</p>
+
+<h4 id="classification-vs-regression">Classification vs Regression</h4>
+
+<p>There is often a distinction drawn between <strong>classification</strong> and <strong>regression</strong> tasks in supervised learning:</p>
+
+<ul>
+  <li><strong>Classification</strong>:
+    <ul>
+      <li>labels are discrete classes</li>
+      <li>\(Y \in \mathbb{Z}\)</li>
+      <li>example algorithm: logistic regression</li>
+    </ul>
+  </li>
+  <li><strong>Regression</strong>:
+    <ul>
+      <li>lables are real-valued</li>
+      <li>\(Y \in \mathbb{R}\)</li>
+      <li>example algorithm: linear regression</li>
+    </ul>
+  </li>
+</ul>
+
+<p>It’s pretty confusing that both of those example algorithms have “regression” in their name, huh? There are more complicated or mixed tasks as well that involve predicting both discrete and continuous variables. We’ll worry about those later.</p>
+
+<h3 id="unsupervised-learning">Unsupervised Learning</h3>
+
+<p>In unsupervised learning there are no “labels”, there is only data. Typically unsupervised learning assumes the data is drawn from some statistical distribution or generating function. Tasks in unsupervised learning involve estimating the distribution or function the data is drawn from, learning to represent the data in a different way (usually by transforming the attribute space), or finding groupings of related data points based on the similarity of their attributes.</p>
+
+<h4 id="k-means-clustering">K-means Clustering</h4>
+
+<p><strong>K-means</strong> clustering is a common technique for clustering data based on similarity of attributes. Data points are clustered into groups based on their distance from each other in attribute space according to some metric. The algorithm for K-means is an example of iterative <strong>expectation-maximization (EM)</strong> algorithm for finding a local maximum of a latent-variable model.</p>
+
+<p>The k-means algorithm assumes:</p>
+
+<ul>
+  <li>there are some number \(k\) of clusters in the data</li>
+  <li>each data point belongs to a cluster
+    <ul>
+      <li>cluster assignments are latent variables, they are not observed</li>
+    </ul>
+  </li>
+  <li>each cluster has a central point, or <strong>centroid</strong></li>
+  <li>data points in a cluster are closer to that cluster’s centroid than to any other cluster’s centroid</li>
+</ul>
+
+<p>First k-means randomly initialzes cluster centroids. Then the algorithm alternates between <strong>expectation</strong> and <strong>maximization</strong> steps:</p>
+
+<p><strong>Expectation</strong>: assign data to clusters based on distance to nearest centroid. Each data point is assigned to the cluster of the nearest centroid by some given distance metric (often, but not always, \(L_2\)) distance.</p>
+
+<p><strong>Maximization</strong>: centroids are updated based on the data that belongs to their cluster. Typically this is done by assigning the centroid to be the mean of the data points assigned to that cluster (hence the “means” in k-means).</p>
+
+<p>K-means clustering can be a useful tool for analyzing data sets, discovering patterns, and leveraging those patterns to accomplish some task. For example, k-means clustering on the color values of pixels in an image separates pixels into clusters based on visual similarity, giving a segmentation mask that groups visually similar elements. These elements may correspond to objects or continuous structures.</p>
+
+<figure class="image">
+  <img src="../figs/kmeans.png" alt="Example of k-means clustering on image pixels by color. K = 2. On the left, an image of a rose. On the right, a two color image where the pink of the rose has been segmented as a separate group from the green of the background." data-attribution="" />
+  <figcaption>K-means clustering on pixels by \(L_2\) distance with \(K=2\).</figcaption>
+</figure>
+
+<!--
+Weather Prediction Notation:
+- $$X$$: yesterday's weather
+- $$Y$$: today's weather
+- $$f$$: hypothetical function mapping $$X \to Y$$
+- $$Y$$: physical conditions of planet/universe yesterday
+- $$T$$: physical conditions of planet/universe today
+- $$p$$: laws of physics, $$p: Y \to T$$
+- $$w$$: interpretation of physical conditions as weather, $$w: T \to Y$$
+-->
+
+<h2 id="feature-extraction">Feature Extraction</h2>
+
+<p>Machine learning relies on data. A data point is a collection of <strong>attributes</strong>. These attributes can be:</p>
+
+<ul>
+  <li>binary
+    <ul>
+      <li>is the car new?</li>
+      <li>is it a convertible?</li>
+    </ul>
+  </li>
+  <li>discrete
+    <ul>
+      <li>what brand is the car?</li>
+      <li>what color?</li>
+    </ul>
+  </li>
+  <li>continuous
+    <ul>
+      <li>how many miles per gallon does the car get?</li>
+      <li>how much does it weigh?</li>
+    </ul>
+  </li>
+  <li>or even more complicated…
+    <ul>
+      <li>a paragraph describing the car in natural english</li>
+      <li>a video of the car driving on a bumpy road</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Machine learning algorithms usually want data in a particular format. For example, decision trees partition the data into discrete categories to make predictions thus can handle discrete attributes on their data. However, logistic regression multiplies the data attributes by a weight matrix to make predictions thus the input data should be continuous.</p>
+
+<p>If we want to perform logistic regression on a data set that has discrete attributes we need to encode them somehow. One possibility is <strong>one-hot encoding</strong>. One-hot encoding converts a single, discrete attribute with \(n\) different possibilities into a binary vector with \(n\) elements.</p>
+
+<p>If the cars in our dataset can be “black”, “green”, “blue”, or “red”, a one-hot encoding of this attribute would assign a black car the vector \([1,0,0,0]\), a green car the vector \([0,1,0,0]\), etc.</p>
+
+<p>One-hot encoding is an example of <strong>feature extraction</strong>. Feature extraction is the process of taking raw data and converting it into useable and useful attributes for a machine learning model. Most machine learning algorithms rely heavily on feature extraction. K-means clustering needs data attributes to be in a metric space where we can compute distances. Logistic regression needs continuous data. <strong>Bayes networks</strong> assume that data attributes are conditionally independent from each other. Each of these restrictions can be addressed by extracting the right features in the right way from raw data.</p>
+
+<h2 id="deep-learning-is-trainable-feature-extraction">Deep Learning is Trainable Feature Extraction</h2>
+
+<p>Hand-designed feature extraction can be very powerful but also very tedious. <strong>Deep learning</strong> encompasses a set of algorithms that process (relatively) raw data instead of curated features. These algorithms learn to extract features from the raw data and then use those features to make predictions.</p>
+
+<p>Typically deep learning is:</p>
+
+<ul>
+  <li>Neural network based</li>
+  <li>Uses large amounts of data</li>
+  <li>Incorporates feature extraction as part of the model
+    <ul>
+      <li>Has many “layers” of processing</li>
+      <li>Early layers extract simple features from raw data</li>
+      <li>Later layers extract complex features from simple features</li>
+    </ul>
+  </li>
+</ul>
+
+<p>This is <em>very</em> exciting for machine learning practitioners. Typically the difference between a good and bad machine learning model comes down to the features the model uses. Good features = good model, or, as they say, “garbage in, garbage out”. Deep learning offers a different path, instead of trying to find what features make a good model, let the model learn and decide for itself.</p>
+
+<p>So far deep learning has been most successful with data that has some inherent <strong>structure</strong> and the algorithms take advantage of that structure. Images are composed of pixels and nearby pixels are statistically more related to each other than far away pixels. Natural language is a string of words where future words depend on past words. Sound is a waveform composed of oscillations at different frequencies with those frequencies changing over time. These are the domains where deep learning (currently) works well.</p>
+
+<p>In domains with less structure (for example, diagnosing an illness based on a patient’s symptoms) there are many algorithms that outperform neural networks or deep learning. For those tasks you are much better off using gradient-boosted decision trees or random forests.</p>
+
+<h2 id="learning-from-data">Learning From Data</h2>
+
+<p>The <em>learning</em> part of machine learning means automatically adjusting the parameters of a model based on data. Machine learning algorithms <strong>optimize</strong> the model parameters to give the best model performance for a data set. To optimize our model we first need a way to measure the performance of a model.</p>
+
+<h3 id="loss-functions-describe-how-bad-a-model-performs">Loss Functions Describe How Bad a Model Performs</h3>
+
+<p>A <strong>loss function</strong> describes the performance of a model and a particular set of parameters on a dataset. In particular, it measures how badly the model performs, or how far away from correct the model’s predictions are. There are many options for loss functions but one common one is <strong>\(L_2\) loss</strong> or <strong>mean squared error</strong>.</p>
+
+<h4 id="mean-squared-error">Mean Squared Error</h4>
+
+<p>MSE or \(L_2\) loss measures the squared distance from the models predictions compared to the ground truth over a dataset. Formally, given a dataset of paired inputs and labels \(X = (x_i, y_i)\), a model \(m\), and model parameters \(\theta\), the \(L_2\) loss is given by:</p>
+
+\[L_2(X, m, \theta) = \frac{1}{n} \sum_{i = 1}^n (y_i - m_\theta (x_i))^2\]
+
+<p>In other words, we run our model \(m\) with parameters \(\theta\) on every example to obtain output \(m_\theta (x_i)\). We then take the squared distance of that prediction from the ground truth \(y_i\). We average all those errors over the full dataset.</p>
+
+<p>Now that we have a way to measure how bad our model performs we want to make this term as small as possible. We usually don’t want to change our model or our dataset (that’s called cheating) but we can change our model parameters. In other words we want to find:</p>
+
+\[\mathrm{argmin}_\theta [L_2 (X, m, \theta) ]\]
+
+<p>In plain english, we want to find the values \(\theta\) that minimize our \(L_2\) loss. Read on for how we can do that!</p>
+
+<h3 id="optimization-as-function-minimization">Optimization as Function Minimization</h3>
+
+<p>Optimization just means that given an objective function \(f\) we want to find the inputs \(x\) that give us the best output. This means finding extrema in the function output, either <strong>minima</strong> or <strong>maxima</strong>. These extrema come in two varieties, <strong>local</strong> and <strong>global</strong>.</p>
+
+<p>The <strong>global minimum</strong> of a function is the point \(x\) such that the output of \(f\) is lower at \(x\) than any other point:</p>
+
+\[\forall_y : f(x) \le f(y)\]
+
+<p>A <strong>local minimum</strong> of a function is a point \(x\) such that in a <strong>neighborhood</strong> \(\epsilon\) distance around \(x\), the output of \(f\) is lower at \(x\) than at any point in the neighborhood:</p>
+
+\[\exists_{\epsilon &gt; 0} \forall_y: d(x,y) &lt; \epsilon \implies f(x) \le f(y)\]
+
+<p>The definitions are similar for global/local maxima.</p>
+
+<h4 id="convexity">Convexity</h4>
+
+<figure class="image">
+  <img src="../figs/convexity.png" alt="Graph of a convex function vs a non-convex function. On the left a convex function that is cup-shaped. The bottom of the curve is labelled 'Global Minimum'. On the right a non convex function that dips down, rises back up, dips partially back down, levels out, then dips further down, then back up. The first dip is labelled 'Local Minimum'. The leveled out portion is labelled 'Saddle Point'. The final dip down is labelled 'Global Minimum'" data-attribution="" />
+  <figcaption>Any two points on the graph of a convex function can be connected with a line and the line will lie above the graph. Any local minimum of a convex function is the global minimum while non-convex functions can have non-global local minimum and saddle points.</figcaption>
+</figure>
+
+<p>A <strong>convex</strong> function is a function where you can draw a line between any two points on the graph of the function and that line will lie above the graph. For a convex function, any local extrema is guaranteed to be the global extrema. This makes optimization a lot easier, if we find any good answer we know it’s actually the best answer. Unfortunately for neural networks we are optimizing <strong>non-convex</strong> functions.</p>
+
+<p>A <strong>non-convex</strong> function doesn’t have this cup shape. There can be multiple local minima and maxima, there may be saddle points. Algorithms for non-convex optimization get stuck in local minima and have fewer guarantees about the answer they produce. Oh well, we must forge ahead anyway!</p>
+
+<h4 id="identifying-function-extrema">Identifying Function Extrema</h4>
+
+<p>If you remember all the way back to calculus, you can tell a lot about a function by taking it’s derivative. In particular, when a function’s derivative is zero that means it’s either at a local minimum, local maximum, or a <strong>saddle point</strong>. We like local minima and local maxima and we’ll just hope for now that we don’t get stuck at a saddle point (there’s an ongoing debate in the ML community about how much saddle points matter).</p>
+
+<p>Consider a simple quadratic equation. The zero crossing of the derivative shows us where a local minimum is on the function. This function is convex so we know the local minimum is a global minimum:</p>
+
+<figure class="graph">
+    <div id="eq1" style="width: 600px; height: 400px;"></div>
+    <script>
+        var elt = document.getElementById('eq1');
+        var calculator = Desmos.GraphingCalculator(elt);
+        calculator.setExpression({ id: 'eq1', latex: '2x^2 + .5x - 2' });
+        calculator.setExpression({ id: 'eq12', latex: '4x + .5' });
+        calculator.setExpression({ id: 'eq13', latex: '' });
+        calculator.setMathBounds({ left: -4, right: 4, bottom: -4, top: 4 });
+    </script>
+    <figcaption>A graph of \(f(x) = 2x^2 + .5x - 2\) and it's derivative \(f'(x) = 4x + .5\)</figcaption>
+</figure>
+
+<p>For some functions we may have multiple local extrema. For example \(f(x) = \sin(x)\) we have \(f'(x) = \cos(x)\) and every zero crossing of the periodic cosine function is a local minimum or maximum of the sine function.</p>
+
+<figure class="graph">
+    <div id="eq2" style="width: 600px; height: 400px;"></div>
+    <script>
+        var elt = document.getElementById('eq2');
+        var calculator = Desmos.GraphingCalculator(elt);
+        calculator.setExpression({ id: 'eq2', latex: '\\sin(x)' });
+        calculator.setExpression({ id: 'eq22', latex: '\\cos(x)' });
+        calculator.setExpression({ id: 'eq23', latex: '' });
+        calculator.setMathBounds({ left: -4, right: 4, bottom: -4, top: 4 });
+    </script>
+    <figcaption>A graph of \(f(x) = \sin(x)\) and it's derivative \(f'(x) = \cos(x)\)</figcaption>
+</figure>
+
+<h4 id="closed-form-optimization">Closed-Form Optimization</h4>
+
+<p>So to optimize a function all we have to do is find where it’s derivative is zero. This might be pretty easy, consider our quadratic function:</p>
+
+\[f(x) = 2x^2 + .5x - 2\]
+
+<p>In this case we just take the derivative:</p>
+
+\[\frac{d}{dx}f(x) = 4x + .5\]
+
+<p>and finally set the derivative equal to zero and solve for \(x\):</p>
+
+\[\begin{align}
+4x&amp; + .5 = 0 \\\\
+4x&amp; = -.5    \\\\
+x&amp; = -.125
+\end{align}\]
+
+<h4 id="derivatives-without-closed-form-solution">Derivatives Without Closed-Form Solution</h4>
+
+<p><strong>Algebraic</strong> functions (functions that are just composed of addition, subtraction, multiplication, division, and raising to a power) are often easy to solve. <strong>Transcendental</strong> functions, or non-algebraic functions, can be a bit trickier. Consider \(f(x) = e^{-x} + x^2\). We can take the derivative of this function and try to set it equal to zero:</p>
+
+\[\begin{align}
+\frac{d}{dx} f(x) &amp;= -e^{-x} + 2x \\
+0 &amp;= -e^{-x} + 2x \\
+e^{-x} &amp;= 2x \\
+\end{align}\]
+
+<p>But we run out of tools to solve for \(x\). But there is a zero crossing of the derivative, somewhere around \(x \approx .351734\). So how do we find it?</p>
+
+<figure class="graph">
+    <div id="eq3" style="width: 600px; height: 400px;"></div>
+    <script>
+        var elt = document.getElementById('eq3');
+        var calculator = Desmos.GraphingCalculator(elt);
+        calculator.setExpression({ id: 'eq3', latex: 'e^{-x} + x^2' });
+        calculator.setExpression({ id: 'eq32', latex: '-e^{-x} + 2x' });
+        calculator.setExpression({ id: 'eq33', latex: '' });
+        calculator.setMathBounds({ left: -4, right: 4, bottom: -4, top: 4 });
+    </script>
+    <figcaption>A graph of \(f(x) = e^{-x} + x^2\) and it's derivative \(f'(x) = -e^{-x} + 2x\)</figcaption>
+</figure>
+
+<h4 id="the-derivative-points-the-way">The Derivative Points The Way</h4>
+
+<p>While there may be no closed-form solution to find the local minimum, the derivative can still be useful. The derivative tells us about the local structure of \(f(x)\):</p>
+
+<ul>
+  <li>if \(\frac{d}{dx} f(x)\) is positive then increasing \(x\) will increase \(f(x)\)</li>
+  <li>if \(\frac{d}{dx} f(x)\) is negative then increasing \(x\) will decrease \(f(x)\)</li>
+</ul>
+
+<p>So if we want to minimize our function we just have to move in the opposite direction of the derivative. If the derivative is positive we make \(x\) smaller. If it’s negative we make \(x\) bigger. Assuming our change to \(x\) is sufficiently small this will make \(f(x)\) go down at least by a little bit. Once we have made a change to \(x\) we can re-evaluate our derivative and see what to do next.</p>
+
+<p>For example if we start at \(x = -.5\):</p>
+
+<ul>
+  <li>\(f(-.5) = 1.8987\)</li>
+  <li>\(f’(-.5) = -2.6487\)</li>
+  <li>Gradient is negative</li>
+  <li>Need to increase \(x\)</li>
+</ul>
+
+<p>Say we increase every step by \(.25\)</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>\(x\)</th>
+      <th>\(f(x)\)</th>
+      <th>\(f'(x)\)</th>
+      <th>Direction to move</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>-.5</td>
+      <td>1.8987</td>
+      <td>-2.6487</td>
+      <td>Increase \(x\)</td>
+    </tr>
+    <tr>
+      <td>-.25</td>
+      <td>1.3465</td>
+      <td>-1.7840</td>
+      <td>Increase \(x\)</td>
+    </tr>
+    <tr>
+      <td>0</td>
+      <td>1</td>
+      <td>-1</td>
+      <td>Increase \(x\)</td>
+    </tr>
+    <tr>
+      <td>.25</td>
+      <td>.8413</td>
+      <td>-.2788</td>
+      <td>Increase \(x\)</td>
+    </tr>
+    <tr>
+      <td>.5</td>
+      <td>.8563</td>
+      <td>.3935</td>
+      <td>Decrease \(x\)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>We haven’t found our precise local minimum but we do know that \(f'(x)\) crosses zero somewhere between \(.25 &lt; x &lt; .5\). That’s pretty good! But we can do better.</p>
+
+<p>Instead of moving by a constant amount every time we can move based on the magnitude of the derivative. For example, when the derivative magnitude is large we might want to move further and when the derivative is smaller we will move less. This way, if our function is smooth the example, as we get closer to the minimum we will move by smaller increments to get a better estimate.</p>
+
+<p>However, before we were moving by \(.25\) every step and our smallest derivative magnitude was \(.2788\) so if we just move by the amount of the derivative we will still move too much! So we will move based on our derivative but scaled by some value.</p>
+
+<h3 id="gradient-descent">Gradient Descent</h3>
+
+<p>We are finally ready for our non-convex, iterative optimization algorithm. We have some value for our function input \(x\) and at every time step we will simply move in the opposite direction of the derivative by an amount based on the magnitude of the derivative and scaled by some amount \(\eta\), called the <strong>learning rate</strong>.</p>
+
+<h4 id="why-gradient-descent">Why “Gradient” Descent?</h4>
+
+<p>We’ve been talking about derivatives, what’s this gradient thing? The <strong>gradient</strong> is sort of like a generalization of the derivative to multiple dimensions. For a function that takes multiple inputs the gradient gives the partial derivatives of that function with respect to each of the inputs. Formally:</p>
+
+\[\nabla f(\mathbf{x}) = [\frac{d}{d x_1} f(\mathbf{x}), \frac{d}{d x_2} f(\mathbf{x}),\frac{d}{d x_3} f(\mathbf{x}), \dots ]\]
+
+<p>Like the derivative, the gradient of a function points in the direction of steepest ascent of the function. Therefore if we want to minimize a function we can move in the direction opposite the gradient, hence gradient descent!</p>
+
+<h4 id="gradient-descent-algorithm">Gradient Descent Algorithm</h4>
+
+<ul>
+  <li>To find \( \mathrm{argmin}_x f(x) \):
+    <ul>
+      <li>start with some estimate of \(x\)</li>
+      <li>repeat until converged:
+        <ul>
+          <li>\(x = x - \eta \nabla f(x)\)</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<p>Values for \(\eta\) can vary greatly depending on the problem domain or function. In neural network optimization typical values range from \([0.00001 - 0.1]\).</p>
+
+<p>With some assumptions about the function being well behaved and the learning rate being sufficiently small, gradient descent is guaranteed to converge to a local minimum. However, it is not necessarrily a global minimum and depending on the initialization and function multiple runs can converge to different local minima.</p>
+
+<h2 id="case-study-linear-regression">Case Study: Linear Regression</h2>
+
+<p>For linear regression our model fits a line to a set of data: \(m(x) = ax + b\). In this case our model parameters \(\theta = \{a, b\}\). We can use our previously discussed loss function \(L_2\) to optimize this model:</p>
+
+\[L_2(X, m, \{a, b\}) = \frac{1}{n} \sum_{i=1}{n} (y_i - (ax + b))^2\]
+
+<p>At every step we will update based on the gradient of the loss:</p>
+
+\[\begin{align}
+\nabla L_2(X, m, \{a, b\}) &amp;= [\frac{d}{d a} L_2(X, m, \{a, b\}),\frac{d}{d b} L_2(X, m, \{a, b\}) ] \\
+&amp;= [\frac{d}{d a} \frac{1}{n} \sum_{i=1}^{n} (y_i - (ax_i + b))^2 ,\frac{d}{d b} \frac{1}{n} \sum_{i=1}^{n} (y_i - (ax_i + b))^2 ] \\
+&amp;= [\frac{d}{d a} \sum_{i=1}^{n} (y_i - (ax_i + b))^2 ,\frac{d}{d b} \sum_{i=1}^{n} (y_i - (ax_i + b))^2 ] \\
+&amp;= [\sum_{i=1}^{n} 2 (y_i - (ax_i + b)) \frac{d}{d a} -(ax_i + b)  ,\sum_{i=1}^{n} 2 (y_i - (ax_i + b)) \frac{d}{d b} -(ax_i + b) ] \\
+&amp;= [\sum_{i=1}^{n} -2 (y_i - (ax_i + b)) x_i  ,\sum_{i=1}^{n} -2 (y_i - (ax_i + b)) ] \\
+\end{align}\]
+
+<p>Let’s define \(h_i = ax_i + b\) to be the output of our model. Then we can look just at how we would update the biases of our model:</p>
+
+\[\frac{d}{d b} L_2 =  \sum -2 (y_i - h_i)\]
+
+<p>Since we are subtracting our gradient this means our update would look like:</p>
+
+\[b = b + \eta \sum 2 (y_i - h_i)\]
+
+<p>This makes sense, if our model consistently predicts too small of values than \(\sum 2(y_i - h_i)\) will be negative and we will increase our bias. If our model predicts too large of values the sum will be negative and we will lower our bias.</p>
+
+<p>The logic is similar for updating parameter \(a\) except the error our model makes is multiplied by the input \(x\). This makes sense, if the model predicts too small a value the parameter \(a\) should increase if \(x\) is positive and decrease if \(x\) is negative.</p>
+
+<h2 id="case-study-logistic-regression">Case Study: Logistic Regression</h2>
+
+<p>Classification algorithms assign class labels or probabilities to data instead of real-value output but they function very similarly with regards to training and testing. <strong>Binary classification</strong> is the simplest classification task, the label is just a single bit, either the data point is a positive or negative example of some particular class.</p>
+
+<p>Consider the following example dataset:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>x</th>
+      <th>y</th>
+      <th>label</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>2</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>3</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>4</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>1</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>1</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>3</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Notice that when \(x &lt; y\) the label is 1 and when \(x &gt; y\) the label is 0. This data is <strong>linearly separable</strong> with many functions but one example would be the line defined by \(y = x\). The points that lie above this line are positive examples and the points below are negative.</p>
+
+<p>In general, a <strong>linear classifier</strong> learns a model of the data that separates it based on a line (or hyper-plane in more dimensions). The model uses a function \(f\) and learns a set of weights \(w\) to make predictions where the output of the model is the probability that a data point is positive for the label:</p>
+
+\[\Pr( \mathrm{label} | x) = f(w \cdot x) = f(\sum_i w_i x_i)\]
+
+<figure class="image">
+  <img src="../figs/classifierex.png" alt="A plot of the example data with a dividing line at y = x. Points above the line are positive exmaples, points below are negative. An unlabelled point at (4,5) is shown." data-attribution="" />
+  <figcaption>Linear classification on the exmaple dataset. The new point lies above the line thus is labelled as a positive example.</figcaption>
+</figure>
+
+<p>This function \(f\) can take many forms. one is simply a thresholding function: \(f(x) = \begin{cases} 1 &amp;\text{if } x &gt; 0\\ 0&amp;\text{otherwise} \end{cases}\) In our example dataset one linear classifier would be a thresholding function at \(0\) with learned weights \([-1, 1]\). Given a new data point, say \([4,5]\) the model takes the dot product of the input with weights and applies the threshold:</p>
+
+\[\begin{align}
+Pr( label | (4,5)) &amp;= f(w \cdot x) \\
+&amp;= f([-1, 1] \cdot [4, 5]) \\
+&amp;= f(-4 + 5) \\
+&amp;= f(1) \\
+&amp;= 1 
+\end{align}\]
+
+<p>This simple model works for our current dataset but has the constraint that the <strong>decision boundary</strong> must pass through the origin, \((0,0)\). In practice our data may be shifted around and this constraint would hinder our performance. Thus most linear models incorporate a bias term that is added to the weighted sum of weights and input features to make the model more robust. In this case our model learn parameters \(\theta = (w, b)\) and the output would be:</p>
+
+\[\Pr(\text{label} \mid x) = f(w \cdot x + b)\]
+
+<p>Using a threshold as our function assigns hard labels to new data points regardless of where they fall. In practice it is useful to predict <strong>soft labels</strong> or probabilities. This allows the model to convey relative confidence in it’s predictions, for example the model should probably be less confident abount data closer to the decision boundary and more confident about data further from the boundary. Importantly, the threshold function is also not differentiable so optimization is more difficult, let’s pick a better function.</p>
+
+<p>The <strong>logistic function</strong>, \(\sigma(x) = \frac{1}{1 + e^{-x}}\) is differentiable and maps the real numbers to the interval \([0,1]\). The letter \(\sigma\) is often used to represent the logistic function because it is <strong>sigmoid</strong> or has an S-shape to it:</p>
+
+<figure class="graph">
+    <div id="logistic" style="width: 600px; height: 400px;"></div>
+    <script>
+        var elt = document.getElementById('logistic');
+        var calculator = Desmos.GraphingCalculator(elt);
+        calculator.setExpression({ id: 'logistic', latex: '1/(1+e^{-x})' });
+        calculator.setExpression({ id: 'logistic2', latex: '' });
+        calculator.setExpression({ id: 'logistic3', latex: '' });
+        calculator.setMathBounds({ left: -4, right: 4, bottom: -4, top: 4 });
+    </script>
+    <figcaption>A graph of the logistic function \(\sigma(x) = \frac{1}{1 + e^{-x}}\)</figcaption>
+</figure>
+
+<p>Now points on the decision boundary, where the weighted sum is 0, will be assigned a probability of \(0.5\). As points fall further from the boundary the model will be more confident in it’s prediction.</p>
+
+<h3 id="optimizing-logistic-regression">Optimizing Logistic Regression</h3>
+
+<p>We have a differentiable model but we also need a loss function. In this case we will use <strong>negative log likelihood</strong> or the negative probability that the model assigns to the labels of our dataset:</p>
+
+\[\text{NLL}(\theta \mid X, Y) = - \log[\Pr (Y \mid X, \theta)] = -\log \prod_i \Pr(y_i \mid x_i, \theta)\]
+
+<p>Note that \(\Pr(y_i \mid x_i, w)\) is just the probability our model assigns to the ground truth label:</p>
+
+<ul>
+  <li>If \(y_i = 1\) this quantitiy is \(\Pr(1 \mid x_i, \theta) = \sigma(w \cdot x_i + b)\)</li>
+  <li>If \(y_i = 0\) this quantitiy is \(\Pr(0 \mid x_i, \theta) = 1 - \sigma(w \cdot x_i + b)\)</li>
+</ul>
+
+<p>So substituting in:</p>
+
+\[\begin{align}
+\text{NLL}(\theta \mid X, Y) &amp;= -\log \prod_i [(\sigma(w \cdot x + b))^{y_i} (1-\sigma(w \cdot x + b))^{1-y_i}]\\
+&amp;= -\sum_i \log [(\sigma(w \cdot x + b))^{y_i} (1-\sigma(w \cdot x + b))^{1-y_i}] \\
+&amp;= -\sum_i \log [(\sigma(w \cdot x + b))^{y_i}]  + \log [(1-\sigma(w \cdot x + b))^{1-y_i}]\\
+&amp;= -\sum_i y_i \log (\sigma(w \cdot x + b))  + (1-y_i)\log (1-\sigma(w \cdot x + b))\\
+\end{align}\]
+
+<p>Now we’re gonna get into some boring math. Here’s a couple equalities about our logistic function and logarithms:</p>
+
+<ul>
+  <li>\( \log(\sigma(x)) = -\log(1 + e^{-x}) \)</li>
+  <li>\( \log(1 - \sigma(x)) = -x -\log(1 + e^{-x}) = -\log(e^x + 1) \)</li>
+</ul>
+
+<p>So let’s crank through some substitutions</p>
+
+\[\begin{align}
+\text{NLL}(\theta \mid X, Y) &amp;= -\sum_i y_i \log (\sigma(w \cdot x + b))  + (1-y_i)\log (1-\sigma(w \cdot x + b))\\
+ &amp;= -\sum_i \cancel{- y_i \log(1 + e^{-(w \cdot x_i + b)})} + (1-y_i) [-(w \cdot x_i + b) \cancel{- \log(1 + e^{-(w \cdot x_i + b)})}]  \\
+ &amp;= -\sum_i y_i (w \cdot x_i + b) - (w \cdot x_i + b) - \log(1 + e^{-(w \cdot x_i + b)})\\
+ &amp;= -\sum_i y_i (w \cdot x_i + b) - \log(1 + e^{w \cdot x_i + b})
+\end{align}\]
+
+<p>NOW we have simplified our loss function we can figure out how to update the weights. We want to take the gradient of our loss</p>
+
+\[\begin{align}
+\nabla_{w,b} \text{NLL}(\theta \mid X, Y) &amp;= \nabla -\sum_i y_i (w \cdot x_i + b) - \log(1 + e^{w \cdot x_i + b}) \\
+&amp;= -\sum_i \nabla y_i (w \cdot x_i + b) - \nabla \log(1 + e^{w \cdot x_i + b}) \\
+&amp;= -\sum_i y_i \nabla (w \cdot x_i + b) - \frac{e^{w \cdot x_i + b}}{1 + e^{w\cdot x_i + b}} \nabla (w \cdot x_i + b) \\
+&amp;= -\sum_i [\nabla (w \cdot x_i + b)] [y_i - \frac{e^{w \cdot x_i + b}}{1 + e^{w\cdot x_i + b}}] \\
+&amp;= -\sum_i [\nabla (w \cdot x_i + b)] [y_i - \sigma(w \cdot x_i + b)] \\
+&amp;= \sum_i [\nabla (w \cdot x_i + b)] [\sigma(w \cdot x_i + b) - y_i] \\
+\end{align}\]
+
+<p>So there’s two components. \(\sigma(w \cdot x_i + b) - y_i\) is just the difference between the predictions and the true label. \(\nabla (w\cdot x_i + b)\) is just the partial derivatives of the weighted sum. For the bias term \(\frac{d}{db} (w \cdot x_i + b) = 1\) and for the weights \(\frac{d}{dw}(w \cdot x_i + b) = x_i\).</p>
+
+<p>Thus our update rules are:</p>
+
+\[\begin{align}
+w &amp;= w - \eta \sum_i x_i (\sigma(w \cdot x_i + b) - y_i)\\
+b &amp;= b - \eta \sum_i (\sigma(w \cdot x_i + b) - y_i)\\
+\end{align}\]
+
+<p>This is very similar to our update rules for linear regression!</p>
+
+<h2 id="stochastic-gradient-descent">Stochastic Gradient Descent</h2>
+
+<p>Notice that our update rule involves summing over the entire dataset the difference between our prediction and the ground truth label. That’s a lot of work! We have to run the model on every instance in the dataset just to update our weights by a small amount. What if instead of taking the full gradient of the loss function we just took an estimate? How could we do this estimate?</p>
+
+<p>We just randomly sample! In <strong>stochastic gradient descent</strong> we estimate our loss function on a randomly sampled subset of the data. The number of elements we sample from our data is the <strong>batch size</strong>. You can use a batch size even as low as a single element of the data. In that case our update rule would be:</p>
+
+\[\begin{align}
+w &amp;= w - \eta x (\sigma(w \cdot x + b) - y)\\
+b &amp;= b - \eta (\sigma(w \cdot x + b) - y)\\
+\end{align}\]
+
+<p>Cool cool cool. Stochastic gradient descent uses random sampling to get a <strong>noisy</strong> estimate of the gradient. However, because we sample randomly the estimate is <strong>unbiased</strong>, i.e. the errors will average out over time. Thus we can just make smaller updates to our parameters and trust that we will eventually get to the right place (or learn a bunch of math and prove it!).</p>
+
+<h2 id="solving-any-problem-with-machine-learning">Solving Any Problem With Machine Learning</h2>
+
+<p>Here’s how you solve any problem with machine learning:</p>
+
+<ol>
+  <li>Get some <strong>data</strong>: very important, probably need lots of data and labels</li>
+  <li>Pick a <strong>model</strong>: pick a good one, preferably one that encodes any structure present in your data</li>
+  <li>Design the <strong>loss function</strong>: should tell you how bad your model is</li>
+  <li>Initialize model <strong>parameters</strong>: randomly? zeros? depends on the model</li>
+  <li><strong>Optimize!</strong></li>
+</ol>
+
+<p>Using gradient descent (or stochastic gradient descent) your goal is to optimize your loss function to find the best parameters for your model. You can think of the data, model, and labels as constants and your loss function takes as input model parameters. Gradient descent shows you how to change your parameters to minimize your loss:</p>
+
+<figure class="chart">
+<div class="mermaidsvg">
+<div class="mermaid">
+
+graph LR
+    w["model parameters <br /> (weights)"] --&gt; model
+    subgraph Loss Function
+    model --&gt; | predictions | error
+    data --&gt; | labels | error
+    data --&gt; | features | model
+    end
+    error --&gt; loss
+
+</div>
+</div>
+<figcaption>The loss function takes as input the parameters to the model. It uses those parameters to calculate predictions based on features from the data. It compares these predictions to the labels from that data and outputs the calculated loss. <a target="_blank" href="../chartsrc?src=%0Agraph+LR%0A++++w%5B%22model+parameters+%3Cbr+%2F%3E+%28weights%29%22%5D+--%3E+model%0A++++subgraph+Loss+Function%0A++++model+--%3E+%7C+predictions+%7C+error%0A++++data+--%3E+%7C+labels+%7C+error%0A++++data+--%3E+%7C+features+%7C+model%0A++++end%0A++++error+--%3E+loss%0A">(source)</a></figcaption>
+</figure>
+
+
+
+
+<script>
+mermaid.initialize({
+    startOnLoad:false,
+    cloneCssStyles: false,
+    flowchart:{
+        curve:'basis',
+        htmlLabels:true,
+    },
+    theme: 'default',
+    themeVariables:{
+        edgeLabelBackground:'#fff',
+    },
+});
+
+window.onload = function(){
+            mermaid.init();
+
+            window.MathJax = {
+              tex: {
+                macros: {
+                  d: "{\\nabla}",
+                  x: "{\\times}",
+                }
+              }
+            };
+
+            (function () {
+              var script = document.createElement('script');
+              script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+              script.async = true;
+              document.head.appendChild(script);
+            })();
+    
+};
+</script>
+
+  </body>
+</html>

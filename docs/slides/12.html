@@ -1,0 +1,776 @@
+---
+layout: slides
+title: Deep Learning - 12 - Optimization Tips and Tricks
+permalink: /slides/12
+---
+background-image: url('../figs/title.png')
+
+---
+class: center, middle
+
+# Chapter 12 - Optimization Tips and Tricks
+
+---
+
+# Deep Learning Toolbox
+
+- General
+    - Connected Layer
+    - Activation Layer
+    - Residual Layer
+    - Dropout Layer
+    - Self-Attention Layer
+- Images
+    - Convolutional Layer
+    - Pooling Layer
+- Sequences
+    - Recurrent Layer
+    - Gated Recurrent Unit Layer
+    - Long Short-Term Memory Layer
+
+---
+class: center, middle
+
+## General Purpose Layers
+
+---
+
+# Connected Layer
+
+Every neuron in the input connected to every neuron in the output via weighted sum. Common in unstructure data or as the final prediction layer in a network
+
+Forward:
+`$$ y = w*x + b$$`
+
+Backward:
+`$$ \frac{dL}{dx} = \frac{dL}{dy} * w^T$$`
+`$$ \frac{dL}{dw} = x^T * \frac{dL}{dy}$$`
+
+---
+
+# Activation Layer
+
+Run a non-linear activation on the input. Common choices are ReLU, logistic, or softmax.
+
+Forward:
+`$$ y = f(x)$$`
+
+Backward:
+`$$ \frac{dL}{dx} = \frac{dL}{dy} f'(x)$$`
+
+---
+
+# Residual Layer
+
+Add in input from a previous layer. Used in Resnet architecture, transformers, and others. Effective at mitigating vanishing gradient problem. Changes task from predicting new feature maps to "updating" current feature map.
+
+.col50[
+Forward:
+`$$ y = x + x_{prev}$$`
+
+Backward:
+`$$ \frac{dL}{dx} \mathrel{+}= \frac{dL}{dy}$$`
+`$$ \frac{dL}{dx_{prev}} \mathrel{+}= \frac{dL}{dy}$$`
+]
+.col50[
+{% include chart
+chart='
+flowchart TB
+    1[28x28x512]-- 1x1, 64 conv --> 2[28x28x64]
+    2-- 3x3, 64 conv --> 3[28x28x64]
+    3-- 1x1, 512 conv --> 4[28x28x512]
+    1-- residual connection --> 4
+'
+caption="Example block from ResNet-152."
+%}
+]
+
+---
+
+# Dropout Layer
+
+Randomly set some neurons to zero in the output. Useful for regularizing powerful models, especially ones with big fully connected layers. Like training many smaller, randomly structure networks and then averaging their output at test time. Probability of dropping a node is usually `\(\alpha = 0.5\)` but can vary
+
+Forward:
+
+Train
+`$$ y_i = x_i * I_{\Pr = \alpha}$$`
+
+Test
+`$$ y_i = x_i \frac{1}{\alpha}$$`
+
+
+Backward:
+`$$ \frac{dL}{dx_i} = \frac{dL}{dy_i} * I_i$$`
+
+---
+
+# Self-Attention Layer
+
+Run self-attention on input vector. Useful across domains including NLP and vision.
+
+Forward:
+
+`$$ y = \sigma(x*w_q *[x*w_k]^T)*x*w_v $$`
+
+
+Backward:
+
+`$$\frac{dL}{dx} = \text{idk seems hard this is why people use autograd}$$`
+
+---
+class: center, middle
+
+## Layers for Image Processing
+
+---
+
+# Convolutional Layer
+
+Run convolutional filters over an image, output has # channels = # filters. Most common are `\(3 \times 3\)` or `\(1 \times 1\)` filters with a stride of 1 or 2.
+
+Forward:
+
+`$$ y = w*\text{im2col}(x) $$`
+
+
+Backward:
+
+`$$\frac{dL}{dw} = \frac{dL}{dy}*\text{im2col}(x)^T$$`
+`$$\frac{dL}{dx} = \text{col2im}(w^T*\frac{dL}{dy})$$`
+---
+
+# Pooling Layer
+
+Run maxpool, average pool, or other pooling operation on spatial feature map, useful for downsizing feature maps in the spatial dimension.
+
+Forward:
+
+`$$ y_{i,j,k} = \max_{w \in [i-\frac{s}{2}..i+\frac{s}{2}], h \in [j-\frac{s}{2}..j+\frac{s}{2}]}(x_{w,h,k}) $$`
+
+
+Backward:
+`$$ w, h = \underset{w \in [i-\frac{s}{2}..i+\frac{s}{2}], h \in [j-\frac{s}{2}..j+\frac{s}{2}]}{\text{argmax}}(x_{w,h,k}) $$`
+`$$ \frac{dL}{dx_{w,h,k}} \mathrel{+}= \frac{dL}{dy_{i,j,k}} $$`
+
+---
+class:center, middle
+# Sequence Modeling Layers
+
+---
+
+# Vanilla Recurrent Layer
+
+
+
+Forward:
+
+`$$ h_t = f(w*[x_t, h_{t-1}]) $$`
+`$$ y_t = h_t $$`
+
+
+Backward:
+
+`$$[\frac{dL}{dx}, \frac{dL}{dh_{t-1}}] = [\frac{dL}{dy}f'(w*[x_t, h_{t-1}])]*w^T$$`
+`$$\frac{dL}{dw} = [x_t,h_{t-1}]^T*[\frac{dL}{dy}f'(w*[x_t, h_{t-1}])]$$`
+
+---
+
+# Gated Recurrent Unit Layer (GRU)
+
+
+Forward:
+
+`$$ r_t = \sigma (W_r \cdot [h_{t-1}, x_t])  $$`
+`$$ \t h_t = \tanh (W \cdot [r_t * h_{t-1}, x_t])  $$`
+`$$ z_t = \sigma (W_z \cdot [h_{t-1}, x_t]) $$`
+`$$ h_t = (1-z_t)*h_{t-1} + z_t * \t h_t  $$`
+`$$ y_t = h_t  $$`
+
+
+---
+
+# Long Short-Term Memory Layer (LSTM)
+
+
+Forward:
+
+`$$ f_t = \sigma (W_f x_t + U_f h_{t-1} + b_f)  $$`
+`$$ i_t = \sigma (W_i x_t + U_i h_{t-1} + b_i)  $$`
+`$$ o_t = \sigma (W_o x_t + U_o h_{t-1} + b_o)  $$`
+`$$ c_t = f_t \cdot c_{t-1} + i_t \cdot \sigma (W_c x_t + U_c h_{t-1} + b_c)  $$`
+`$$ h_t = o_t \cdot \sigma(c_t) $$`
+`$$ y_t = h_t $$`
+
+
+---
+class: center, middle
+# Design Patterns
+
+---
+
+# Encoder-Decoder
+.col50[
+- Very large networks
+- Pre-trained on core tasks
+    - Vision: classification
+    - NLP: language modeling
+- Massive amounts of data
+- Take immense time, resources to train
+- Save encoder, train decoders for other tasks
+- Fine-tune end-to-end
+]
+.col50[
+.height480[
+{% include chart
+chart='
+flowchart TD
+    subgraph Pre-train on Imagenet
+    subgraph Encoder
+    1[Input Image 256x256x3]-- 3x3, 16 conv<br />maxpool--> 2[128x128x16]
+    2 -- 3x3, 32 conv<br />maxpool--> 3[64x64x32]
+    3 -- 3x3, 64 conv<br />maxpool--> 4[32x32x64]
+    4 -- 3x3, 128 conv<br />maxpool--> 5[16x16x128]
+    end
+    subgraph Classification Decoder
+    5 --> 6c[16x16x128]
+    6c -- global average pool --> 7c[128]
+    7c -- connected<br />softmax --> 8c[1000 classes]
+    end
+    end
+
+    subgraph Caption Decoder
+    5 --> 6e[16x16x128]
+    6e -- global average pool --> 7e[16x16x128]
+    7e -- transformer language model --> 8e[variable length text]
+    end
+
+    subgraph Detection Decoder
+    5 --> 6d[16x16x128]
+    6d -- 3x3, 128 conv --> 7d[16x16x128]
+    7d -- 1x1, 85 conv<br />logistic --> 8d[80 class + bbox detections]
+    end
+
+'
+caption="Example vision encoder/decoder"
+%}
+]
+]
+
+---
+
+# Vision
+
+.col70[
+- `\(1\times1\)` convolution to compress # of channels
+- `\(3 \times 3\)` convolution on fewer channels is faster
+- Batch norm after every weighted sum
+- Residual connection input to output of block
+- Pre-train on ImageNet
+- Fine-tune on other tasks
+- Saturating ImageNet, what to do?
+    - Make models bigger!
+    - Get more data!
+- Less supervision, weaker, tags, unfiltered data
+    - Google: JFT-300M
+    - Facebook: 3.5 billion Instagram images
+
+]
+.col30[
+{% include chart
+chart='
+flowchart TB
+    1[14x14x512]-- 1x1, 64 conv<br />batchnorm<br />relu--> 2[14x14x64]
+    2-- 3x3, 512 conv <br />batchnorm<br/>relu--> 3[14x14x512]
+    1-- residual connection --> 3
+'
+caption="Example block"
+%}
+]
+
+---
+# Teacher-Student Training
+.col50[
+Facebook's weakly supervised pretraing. Teacher CNN is trained with large dataset (Instagram #hashtags) and fine tuned with smaller, clean data (ImageNet). Then it predicts labels for the large dataset and only most confident examples are taken. Student is trained to predict labels for large, "cleaner" data, then fine-tuned with smaller dataset.
+
+**Soft labels** of teacher are more informative than **hard labels** in datasets, give class information but also which classes are visually similar.
+.footnote[https://arxiv.org/pdf/1805.00932.pdf]
+]
+.col50[
+{% include chart
+chart='
+flowchart TB
+    w --> c
+    w[Large, Noisy<br />Data Set]-- Pre-train teacher --> t[Teacher CNN]
+    d[Smaller, Clean<br />Data Set]-- Fine-tune teacher -->t
+    t-- Predict noisy data --> c[Large, labeled data]
+    c-- Pre-train student --> s[Student CNN]
+    d-- Fine-tune student --> s
+    s-- Ship it --> p[Production Model]
+'
+caption="Facebook's Weakly Supervised Teacher"
+%}
+]
+
+---
+# Noisy Student Training
+.col50[
+Google's Noisy Student training. First teacher is trained with clean data set. Teacher predicts soft labels for large, unlabeled dataset. *Noisy* student learns pseudo labels with lots of "noise" added (data augmentation, dropout, stochastic depth). Student becomes new teacher. Predicts on "un-noised" (i.e. clean) data. Initialize new student and start again. Students can get better over time.
+
+WHY DOES THIS WORK????
+.footnote[https://arxiv.org/pdf/1911.04252.pdf]
+]
+.col50[
+.height480[
+{% include chart
+chart='
+flowchart TB
+    d[Clean Data Set]-- Train teacher --> t[Teacher CNN]
+    w[Large, Unlabeled<br />Data Set] --> c[Pseudo-Labeled Data]
+    t-- Predict Labels -->c
+    c-- Train Student With Noise --> s[Student CNN]
+    s-- Student Becomes The Master --> m[New Teacher]
+    m-- Predict Labels Without Noise --> c
+    m-- Eventually... --> p[Production Model]
+'
+caption="Google's Noisy Student Training"
+%}
+]
+]
+
+---
+# Natural Language Processing
+
+.col50[
+- Build large LSTMs or Transformer networks
+- Pre-train on all the text data
+    - Billions of tokens
+    - All of Wikipedia
+    - A lot of the internet
+    - Every book pre-1930s
+- Can be different languages/etc
+- Fine-tune encoder/decoder on different tasks as needed
+- OR (with GPT-3) just describe the task
+
+{% include chart
+chart='
+flowchart LR
+    input["Input: #quot;Translate English to French:<br />soa otter ==> loutre de mer<br />peppermint ==> menth poivree<br /> cheese ==>#quot;"] --> GPT-3 --> fromage
+'
+caption="GPT-3 Few-Shot Learning Example"
+%}
+
+]
+
+.col50[
+.height480[
+{% include chart
+chart='
+flowchart TD
+    subgraph Pre-train on Language Modeling
+    subgraph Encoder
+    Text-- Encoding --> Tokens
+    Tokens --> r1[RNN]
+    r1 --> r2[RNN]
+    end
+    subgraph Language Modeling Decoder
+    r2 --> r3[RNN]
+    r3 --> r4[RNN]
+    r4 --> r5[Encoded Vector]
+    r5 -- Decoding/Sampling --> r6[Text]
+    end
+    end
+
+    subgraph Question/Answering Decoder
+    r2 --> q3[RNN]
+    q3 --> q4[RNN]
+    q4 --> q5[Encoded Vector]
+    q5 -- Decoding/Sampling --> q6[Text]
+    end
+
+    subgraph Translation Decoder
+    r2 --> t3[RNN]
+    t3 --> t4[RNN]
+    t4 --> t5[Encoded Vector]
+    t5 -- Decoding/Sampling --> t6[French]
+    end
+'
+caption="Example text encoder/decoder"
+%}
+]
+]
+
+.footnote[https://arxiv.org/pdf/2005.14165.pdf]
+
+---
+# Teacher Forcing
+
+.height200[
+{% include chart
+chart='
+graph TB
+    A --> r1[RNN] --> o1[long]
+
+    long --> r2[RNN] --> o2[tine]
+
+    time --> r3[RNN] --> o3[ago]
+
+    ago --> r4[RNN] --> o4[in]
+
+    in --> r5[RNN] --> o5[a]
+
+    a --> r6[RNN] --> o6[universe]
+
+    galaxy --> r7[RNN] --> o7[far]
+
+    far --> r8[RNN] --> o8[far]
+
+    far2[far] --> r9[RNN] --> o9[distant]
+
+    away --> r10[RNN] --> o10[.]
+'
+caption="Teacher forcing uses ground truth input"
+%}
+]
+
+**Teacher forcing** is using the ground truth as input at every time step and only trying to predict one token in advance. Even if the network makes a mistake at one time step, the next input will be the ground truth next token. This approachs means the network can always "trust" the input during training, gives faster convergence.
+
+At test time though, language model might make a mistake. Only using teacher forcing means the network will "trust" this mistake when generating new text as well. For example, a simple spelling error can take the sentence in a different direction:
+
+    Expected: A long time ago in a galaxy...
+    Produced: A long tine on the fork caught on his teeth...
+
+---
+# Student Forcing
+
+.height200[
+{% include chart
+chart='
+graph TB
+    A --> r1[RNN] --> o1[long]
+
+    long --> r2[RNN] --> o2[tine]
+
+    tine --> r3[RNN] --> o3[ago]
+
+    ago --> r4[RNN] --> o4[in]
+
+    in --> r5[RNN] --> o5[a]
+
+    a --> r6[RNN] --> o6[universe]
+
+    universe --> r7[RNN] --> o7[far]
+
+    far --> r8[RNN] --> o8[far]
+
+    far2[far] --> r9[RNN] --> o9[distant]
+
+    distant --> r10[RNN] --> o10[.]
+'
+caption=""
+%}
+]
+
+**Student forcing** uses the network output (or draws samples from the output) as input to the next time step. This means the network can't entirely trust the input. Makes it more robust to mistakes.
+
+Especially important for models like translation, don't want little mistakes to derail the entire translated sentence.
+
+<pre>
+Expected: A long time ago in a galaxy far far away...
+Produced: A long tine ago in a universe far far distant...
+</pre>
+
+May be some mispellings or synonyms but the meaning is basically the same. Typically use some combination of student and teacher forcing.
+
+---
+# Convergence
+
+.col50[
+Typical loss function graph may look like this
+- Takes time to get started
+    - Parameters randomly initialized
+    - Need to adjust them to predict mean values first
+    - Then gradients are meaningful, can start learning
+- Once learning starts it happens fast
+- Eventually levels off or decrease very slowly
+]
+.col50[
+<iframe src="https://www.desmos.com/calculator/tcxhu0bd9o?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameborder=0></iframe>
+]
+---
+# Convergence
+
+.col50[
+- Loss function gets "narrow", canyonlike
+- Model stops descending and starts bouncing around
+- Step size is too large to keep going down
+]
+.col50[
+<iframe src="https://www.desmos.com/calculator/vy3uxalcdf?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameborder=0></iframe>
+]
+---
+# Convergence
+
+.col50[
+- Loss function gets "narrow", canyonlike
+- Model stops descending and starts bouncing around
+- Step size is too large to keep going down
+- Lower the learning rate to follow this steeper slope
+- Loss decreases again, then levels again
+]
+.col50[
+<iframe src="https://www.desmos.com/calculator/hnezouxplt?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameborder=0></iframe>
+]
+
+---
+# Convergence
+
+.col50[
+- Loss function gets "narrow", canyonlike
+- Model stops descending and starts bouncing around
+- Step size is too large to keep going down
+- Lower the learning rate to follow this steeper slope
+- Loss decreases again, then levels again
+- Can lower learning rate again
+- Loss decreases again but by smaller amount
+- Diminishing returns as we get close to local optimum
+]
+.col50[
+<iframe src="https://www.desmos.com/calculator/jsfvhjbxtf?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameborder=0></iframe>
+]
+
+---
+# Convergence
+
+{% include image
+    src="../figs/resnetloss.png"
+    alt="Loss functions during training for two ResNet architectures. Loss decreases rapidly, levels out at epoch 5 through 15. Then quickly drops again after lower learning rate, levels out epochs 20-30, drops again but by less after another decrease in learning rate. Stays mostly level after epoch 32."
+    attribution=""
+    caption="Loss functions during training for ResNet18 and 34"
+%}
+
+---
+# Simulated Annealing
+
+.col50[
+**Annealing**: slowly cooling metal so that it get stronger. Atoms shake themselves around, settling in to a stable crystal formation. Cool too quickly (quenching) and atoms won't be as tightly packed, more disorganized, harder but brittle.
+
+**Simulated Annealing**: slowly lower learning rate. At begining model has enough speed to get out of bad local optima. As learning rate lowers model can more closely track loss function into steep areas. Settles into very stable local optima (hopefully!)
+]
+.col50[
+<iframe src="https://www.desmos.com/calculator/2pr8wy3nym?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameborder=0></iframe>
+]
+
+---
+
+# SGD Is Bouncy 
+
+.col50[
+Consider minimizing function:
+`$$f(x,y) = x^2 + 50y^2$$`
+Where gradient is:
+`$$\nabla f(x,y) = [2x, 100y]$$`
+Most of the gradient is perpendicular to the direction of the global optimum
+]
+.col50[
+<iframe src="https://www.desmos.com/calculator/fccgjy2yiw?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameborder=0></iframe>
+]
+
+---
+
+# Momentum Averages Out Bounces
+
+.col50[
+Momentum term averages out the back-and-forth gradients and magnifies the gradient that is consistent in one direction:
+
+`$$\begin{align}\Delta w_t &= -\nabla L(w_t) + m*\Delta w_{t-1} \\
+w_{t+1} &= w_t + \eta \Delta w_{t}\end{align}$$`
+
+The purple line is with a momentum term of 0.8
+
+Still issues with momentum, sometimes it is too strong, model builds up speed in a direction and then overshoots!
+]
+.col50[
+<iframe src="https://www.desmos.com/calculator/ey0favzimj?embed" width="500px" height="500px" style="border: 1px solid #ccc" frameborder=0></iframe>
+]
+
+
+---
+
+# Nesterov Gradient Descent
+
+We know we always move by the momentum amount no matter what. So why do we calculate the gradient at our current position?
+
+Instead we can move by the momentum term first, then calculate the gradient step to take from there. This means if our momentum term overshoots our gradient can pull the model back towards the right direction.
+
+`$$\begin{align}\Delta w_t &= -\nabla L(w_t + \eta m*\Delta w_{t-1}) + m*\Delta w_{t-1} \\
+w_{t+1} &= w_t + \eta \Delta w_{t}\end{align}$$`
+
+---
+
+# Newton's Method
+
+Finds roots of a function
+
+`$$x : f(x) = 0$$`
+
+Iterate:
+`$$x = x - f(x)/f'(x) $$`
+
+but we want to find local optima, not roots of our function so....
+ 
+Take derivatives!
+
+---
+# Newton's Method
+
+`$$\text{argmax}_x f(x) = x:f'(x) = 0$$`
+
+so our optimization is...
+
+Iterate:
+`$$x = x - f'(x)/f''(x)$$`
+
+---
+
+# What's Going On Here?
+
+Taylor series expansions:
+
+`$$f(x+a) = f(x) + f'(x)*a + \frac{1}{2}f''(x)*a^2+ \frac{1}{6}f'''(x)*a^3 + \dots + f^{(n)} \frac{1}{n!} a^n + \dots$$`
+
+Gradient descent uses first two terms:
+
+`$$f(x+a) = f(x) + f'(x)*a$$`
+
+This approximates our function as a line (or hyperplane) tangent to the current location `\(f(x)\)`.
+
+In gradient descent we try to pick the direction `\(a\)` to minimize this function. What do we pick?
+
+We just look at the **slope** of the estimate, in this case the slope is `\(f'(x)\)`
+
+Moving in opposite direction of slope decreases `\(f(x)\)` the fastest. But what if our approximation of the function were more complicated than just a hyperplane?
+
+
+---
+
+# What's Going On Here?
+
+Second-order Taylor series expansion:
+
+`$$f(x+a) = f(x) + f'(x)*a + \frac{1}{2}f''(x)*a^2$$`
+
+Instead of linear this is a quadratic approximation. Now we can use an old trick! To minimize a function take derivative and set to zero:
+
+`$$\frac{d}{da} [f(x) + f'(x)*a + \frac{1}{2} f''(x)*a^2 = 0 $$`
+`$$f'(x) + f''(x)*a = 0 $$`
+`$$f''(x)*a = -f'(x)   $$`
+`$$a = -f'(x) /f''(x)  $$`
+
+This is Newton's method! At any point in time, estimate function as a quadratic and then move a little bit to the point that minimizes the quadratic estimation. 
+
+---
+# Newton's Method
+
+`$$\text{argmax}_x f(x) = x:f'(x) = 0$$`
+
+so our optimization is...
+
+Iterate:
+`$$x = x - f'(x)/f''(x)$$`
+
+---
+# Multivariate Newton's Method
+
+`$$\text{argmax}_x f(x) = x:\nabla f(x) = 0$$`
+
+so our optimization is...
+
+Iterate:
+`$$x = x - [Hf(x)]^{-1}*\nabla f(x)$$`
+
+---
+
+# H: Hessian, the problem
+
+`$$ H = \begin{bmatrix}
+\frac{\delta^2}{\delta x_1 \delta x_1} & \frac{\delta^2}{\delta x_1 \delta x_2} & \dots & \frac{\delta^2}{\delta x_1 \delta x_n} \\
+\frac{\delta^2}{\delta x_2 \delta x_1} & \frac{\delta^2}{\delta x_2 \delta x_2} & \dots & \frac{\delta^2}{\delta x_2 \delta x_n} \\
+\dots & \dots & \dots & \dots \\
+\frac{\delta^2}{\delta x_n \delta x_1} & \frac{\delta^2}{\delta x_n \delta x_2} & \dots & \frac{\delta^2}{\delta x_n \delta x_n} \\
+\end{bmatrix}$$`
+
+Quadratic in number of entries in vector `\(x\)`. Neural networks have millions of weights or more, Hessian would be trillions of entries!
+
+BUT Newton's method is still cool and powerful, so can we approximate it in some way? Or get some similar benefit?
+
+One of the main benefits of Newton's method is per-weight scaling of learning. Some weights can change quicker than others based on local second-order information. Many "adaptive" methods that scale learning rate based on recent history of gradients per-weight.
+ 
+---
+
+# RMSProp
+
+`$$ \begin{align} 
+s_t &= ps_{t-1} + (1-p) [\nabla L(w)]^2 &\text{<-- rolling average of gradient squared}\\
+\Delta w &= -\nabla L(w) / \sqrt{s_t + \epsilon} &\text{<-- divide by exponential moving average of gradient}\\
+w &= w + \eta \Delta w
+\end{align}$$`
+
+Why?
+
+`\(s_t\)`: estimate of variance of gradient (uncentered)
+
+Each update is made comparing gradient to past gradients. Less exploding/vanishing gradient problem. If a gradient is high variance we can't trust it much, don't want to move too much based on it. The lower variance it is the more we can trust it.
+
+This scaling effect is similar to second-order methods: "RMSProp provides a biased estimator of the diagonal of the absolute value of the Hessian".
+
+.footnote[https://www.researchgate.net/profile/Y_Bengio/publication/272423025_RMSProp_and_equilibrated_adaptive_learning_rates_for_non-convex_optimization/links/552fb18c0cf2acd38cbc52d1/RMSProp-and-equilibrated-adaptive-learning-rates-for-non-convex-optimization.pdf]
+
+---
+
+# Adam
+
+`$$ \begin{align} 
+v_t &= b_1 v_{t-1} + (1-b_1) \nabla L(w) &\text{<-- rolling average of gradient}\\
+s_t &= b_2 s_{t-1} + (1-b_2) [\nabla L(w)]^2 &\text{<-- rolling average of gradient squared}\\
+\Delta w &= -v_t / \sqrt{s_t + \epsilon} &\text{<-- RMSProp + momentum}\\
+w &= w + \eta \Delta w
+\end{align}$$`
+
+Why?
+
+Something something variance momentum approximately second-order something?
+
+It works well?
+
+---
+
+# So which one do I use?
+
+.col40[
+Most of the time SGD + a version of momentum
+
+Other adaptive methods:
+    - rprop
+    - Adagrad
+    - Adadelta
+    - AdaMax
+    - Nadam
+    - Probably others...
+
+Adam for GANs because it works well for them for some reason?
+
+Wait, what are GANs? Next class!
+]
+
+.col60[
+
+{% include image
+    src="../figs/optimizercompare.png"
+    alt="Chart comparing validation loss over time using different optimizers. RMS prop converges to a high loss, than SGD is slightly lower, SGD + momentum and Adam all converge to lower losses significantly faster. Best is SGD + nesterov + momentum."
+    attribution=""
+    caption="Validation loss between different optimizers, cats vs. dogs task"
+%}
+]
+
+.footnote[https://shaoanlu.wordpress.com/2017/05/29/sgd-all-which-one-is-the-best-optimizer-dogs-vs-cats-toy-experiment/]

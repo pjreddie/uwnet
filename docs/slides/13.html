@@ -1,0 +1,628 @@
+---
+layout: slides
+title: Deep Learning - 13 - Generative Adversarial Networks
+permalink: /slides/13
+---
+background-image: url('../figs/title.png')
+
+---
+class: center, middle
+
+# Chapter 13 - Generative Adversarial Networks
+
+---
+
+# Image Classification
+
+.col70[
+- Given an image, what class is it? (only pick one)
+- Encoder
+- Decoder (fully connected layer)
+- Softmax
+- Optimize via cross-entropy loss
+]
+.col30[
+.height480[
+{% include chart
+chart='
+flowchart TD
+    subgraph Encoder
+    1[Input Image 256x256x3]-- 3x3, 16 conv<br />maxpool--> 2[128x128x16]
+    2 -- 3x3, 32 conv<br />maxpool--> 3[64x64x32]
+    3 -- 3x3, 64 conv<br />maxpool--> 4[32x32x64]
+    4 -- 3x3, 128 conv<br />maxpool--> 5[16x16x128]
+    end
+    subgraph Decoder
+    5 -- global average pool --> 7c[128]
+    7c -- connected<br />softmax --> 8c[1000 classes]
+    subgraph Optimize Cross-Entropy Loss
+    8c
+    end
+    end
+
+'
+caption="Image Classifier"
+%}
+]
+]
+---
+
+# Image Tagging
+
+.col70[
+- Given an image, what tags apply? (can be multiple)
+- Encoder
+- Decoder (fully connected layer)
+- Logistic activation
+- Optimize via binary cross-entropy loss
+]
+.col30[
+.height480[
+{% include chart
+chart='
+flowchart TD
+    subgraph Encoder
+    1[Input Image 256x256x3]-- 3x3, 16 conv<br />maxpool--> 2[128x128x16]
+    2 -- 3x3, 32 conv<br />maxpool--> 3[64x64x32]
+    3 -- 3x3, 64 conv<br />maxpool--> 4[32x32x64]
+    4 -- 3x3, 128 conv<br />maxpool--> 5[16x16x128]
+    end
+    subgraph Decoder
+    5 -- global average pool --> 7c[128]
+    7c -- connected<br />logistic --> 8c[tags]
+    subgraph Optimize Binary Cross-Entropy Loss
+    8c
+    end
+    end
+
+'
+caption="Image Tagger"
+%}
+]
+]
+---
+
+# Object Detection
+
+.col70[
+- Given an image, what objects are present and where?
+- Encoder
+- Decoder (convolutional layers)
+- Optimize bounding box and class predictions
+]
+.col30[
+.height480[
+{% include chart
+chart='
+flowchart TD
+    subgraph Encoder
+    1[Input Image 256x256x3]-- 3x3, 16 conv<br />maxpool--> 2[128x128x16]
+    2 -- 3x3, 32 conv<br />maxpool--> 3[64x64x32]
+    3 -- 3x3, 64 conv<br />maxpool--> 4[32x32x64]
+    4 -- 3x3, 128 conv<br />maxpool--> 5[16x16x128]
+    end
+    subgraph Decoder
+    5 -- 3x3, 128 conv--> 6[16x16x128]
+    6 -- activations --> 7[detection encoding tensor]
+    subgraph Optimize BBox + Classification Loss
+    7
+    end
+    end
+
+'
+caption="Object Detector"
+%}
+]
+]
+---
+
+# Semantic Segmentation
+
+.col70[
+- Given an image, what pixels correspond to what class?
+- Encoder
+- Decoder (convolutional layers + upsampling)
+- Optimize pixel-wise cross-entropy loss
+]
+.col30[
+.height480[
+{% include chart
+chart='
+flowchart TD
+    subgraph Encoder
+    1[Input Image 256x256x3]-- 3x3, 16 conv<br />maxpool--> 2[128x128x16]
+    2 -- 3x3, 32 conv<br />maxpool--> 3[64x64x32]
+    3 -- 3x3, 64 conv<br />maxpool--> 4[32x32x64]
+    4 -- 3x3, 128 conv<br />maxpool--> 5[16x16x128]
+    end
+    subgraph Decoder
+    5 -- 3x3, 64 conv<br /> upsample--> 6[32x32x64]
+    6 -- 3x3, 32 conv<br /> upsample--> 7[64x64x32]
+    7 -- 3x3, 80 conv<br />upsample--> 8[128x128x80]
+    8 -- pixel-wise softmax --> 9[Segmentation Mask]
+    subgraph Optimize Pixel-Level Cross Entropy
+    9
+    end
+    end
+
+'
+caption="Image Segmenter"
+%}
+]
+]
+---
+
+# Image Captioning
+
+.col70[
+- Given an image, write a caption for the image
+- Encoder
+- Decoder (recurrent or transformer language model)
+- Optimize word-level cross-entropy loss
+]
+.col30[
+.height480[
+{% include chart
+chart='
+flowchart TD
+    subgraph Encoder
+    1[Input Image 256x256x3]-- 3x3, 16 conv<br />maxpool--> 2[128x128x16]
+    2 -- 3x3, 32 conv<br />maxpool--> 3[64x64x32]
+    3 -- 3x3, 64 conv<br />maxpool--> 4[32x32x64]
+    4 -- 3x3, 128 conv<br />maxpool--> 5[16x16x128]
+    end
+    subgraph Decoder
+    5 -- global average pool --> 7e[128]
+    7e -- transformer language model --> 8e[variable length text]
+    subgraph Optimize Word-Level Cross-Entropy
+    8e
+    end
+    end
+
+'
+caption="Image Captioner"
+%}
+]
+]
+---
+
+# How To Solve Any Vision Problem?
+
+.col70[
+- Pre-train encoder (optional)
+- Design embedding of output + decoder
+- Pick loss function for output format
+- Label training data
+- Train encoder + decoder with your loss
+]
+.col30[
+.height480[
+{% include chart
+chart='
+flowchart TD
+    subgraph Data
+    X
+    y
+    end
+    subgraph Model
+    X --> Input
+    Input --Encoder--> Features
+    Features --Decoder--> Embedding
+    end
+    Embedding --> Loss
+    y --> Loss
+'
+caption="Universal Solver"
+%}
+]
+]
+---
+
+# New Problem: Image Colorization
+
+.col50[
+Say you want to re-color old or grayscale images. Gathering data is easy, get a bunch of images, convert them to grayscale, you have input data and labels. But there's a problem
+
+- Loss functions (like L2) minimize error
+- Ambiguity, apple could be red, green, yellow...
+- Minimize loss by shooting for the middle.... gray!
+
+]
+.col50[
+{% include image
+    src="../figs/applesbw.jpg"
+    alt="A grayscale image of 5 apples of various shapes and textures."
+    attribution=""
+    caption="Colorize Me!"
+%}
+]
+
+.clear[
+]
+<br />
+
+{% include chart
+chart='
+flowchart LR
+    subgraph Data
+    Color --> Grayscale
+    end
+
+    Grayscale --> Colorizer
+    Colorizer --> gen[Colorized Images]
+    gen --> L2[L2 Loss]
+    Color --> L2
+    L2 --> Colorizer
+'
+caption="Training Colorizer"
+%}
+---
+
+# New Problem: Image Colorization
+
+.col50[
+Say you want to re-color old or grayscale images. Gathering data is easy, get a bunch of images, convert them to grayscale, you have input data and labels. But there's a problem
+
+- Loss functions (like L2) minimize error
+- Ambiguity, apple could be red, green, yellow...
+- Minimize loss by shooting for the middle.... gray!
+
+For some problems (like colorization) we don't want to minimize error over a bunch of ambiguous choices (red, green, yellow...) because the average looks bad (brownish-red). We'd rather have the network pick one color and go with that.
+
+How do we get a model where the error is perceptual? We want the image to "look good".
+]
+.col50[
+{% include image
+    src="../figs/applecolors.png"
+    alt="A color image of the five apples, they are dark red, green, pink, yellow, and red, ish. Also shows the average color of all the apples it's like a brownish red, looks gross."
+    attribution=""
+    caption="Average Colors Look Gross"
+%}
+]
+
+---
+
+# Perceptual Loss
+
+.col70[
+- Want a perceptual loss (does the image look good?)
+- Also want gradients (if it looks bad, how do we make it look better?)
+- Can train a network!
+    - Feed in images that look good and look bad
+    - Network learns to tell difference
+    - Can backpropagate error through network, will tell us how to update image to make it look "better" or "worse"
+]
+.col30[
+.height480[
+{% include chart
+chart='
+flowchart TD
+    subgraph Encoder
+    1[Input Image 256x256x3]-- 3x3, 16 conv<br />maxpool--> 2[128x128x16]
+    2 -- 3x3, 32 conv<br />maxpool--> 3[64x64x32]
+    3 -- 3x3, 64 conv<br />maxpool--> 4[32x32x64]
+    4 -- 3x3, 128 conv<br />maxpool--> 5[16x16x128]
+    end
+    subgraph Decoder
+    5 -- global average pool --> 7c[128]
+    7c -- connected<br />logistic --> 8c[binary classification]
+    subgraph Optimize Binary Cross-Entropy
+    8c
+    end
+    end
+
+'
+caption="Discriminator"
+%}
+]
+]
+
+---
+
+# Generating Good Looking Images
+
+{% include chart
+chart='
+flowchart LR
+    subgraph Data
+    Color --> Grayscale
+    end
+
+    Grayscale --> Colorizer
+    Colorizer --> gen[Colorized Images]
+    gen --> Discriminator
+    Discriminator --Perceptual Loss--> Colorizer
+'
+caption="Training Colorizer"
+%}
+
+Discriminator provides feedback to Colorizer. How?
+
+- Feed in generated image
+- Set label to `[good]` (i.e. not `[bad]`)
+- Discriminator predicts `[bad]`
+- Backpropagation tells how to update network weights to predict `[good]` (ignore this)
+- Backprop to input, tells how to update generated image to make it more `[good]`
+
+But now we are just trying to generated `[good]` images. No loss based on what the images are! We could just generate the same few good loooking images over and over. Need some loss to make output similar to original also.
+
+---
+
+# Generating Good Colorized Images
+
+{% include chart
+chart='
+flowchart LR
+    subgraph Data
+    Color --> Grayscale
+    end
+
+    Color --> L2
+    L2 --Similarity Loss--> Colorizer
+
+    Grayscale --> Colorizer
+    Colorizer --> gen[Colorized Images]
+    gen --> L2[L2 Loss]
+    gen --> Discriminator
+    Discriminator --Perceptual Loss--> Colorizer
+'
+caption="Training Colorizer"
+%}
+
+
+---
+
+# Generative Adversarial Networks
+
+{% include chart
+chart='
+flowchart LR
+    subgraph Data
+    Color --> Grayscale
+    end
+
+
+    Grayscale --> Colorizer
+    Colorizer --> gen[Colorized Images]
+    gen --Test--> Discriminator
+    Discriminator --Perceptual Loss--> Colorizer
+    gen --> gendata
+    Color --> gendata
+    gendata[Real/Fake Data] --Train--> Discriminator
+    Color --> L2
+    gen --> L2[L2 Loss]
+    L2 --Similarity Loss--> Colorizer
+'
+caption="Training Colorizer"
+%}
+
+Example of a **conditional GAN**, in this case a **pix2pix** model. Generator is trying to generate "realistic" image based on that is conditioned on some information (in this case the grayscale image). Discriminator is trained to identify generated vs real images. Generator tries to fool the discriminator.
+
+.footnote[https://arxiv.org/pdf/1611.07004v1.pdf]
+---
+# Colorization Example
+
+.center[
+{% include image
+    src="../figs/colorizeroutput.png"
+    alt="Colorizer output on a variety of grayscale images. Model trained with L2 loss produces muted colors, GAN model produces brighter colors, more realistic, sometimes incorrect. For example an image of a bird has grass behind that is colored bright green but in the original image the grass is more yellowish-green and paler."
+    attribution=""
+    caption="Output From Pix2Pix Colorizer"
+%}
+]
+
+---
+# Semantic Segmentation Example
+
+.center[
+{% include image
+    src="../figs/segmentationoutput.png"
+    alt="Figure from paper showing pix2pix predicting segmentation masks. Text for figure reads: Applying a condition GAN to semantic segmentation. The cGAN produces sharp images that look at a glance like the ground truth, but in fact include many small, hallucinated objects."
+    attribution=""
+    caption="Output From Pix2Pix Segmenter"
+%}
+]
+
+---
+# Reverse Segmentation Example
+
+.center[
+{% include image
+    src="../figs/reversesegmentationoutput.png"
+    alt="Predictions for original images from segmentation masks. Input is a segmentation mask, Ground truth is the original image, predicted output looks somewhat similar to ground truth but is more blurred, has smudges and streaks. some object like cars look weird. Looks similar at first glance but not upon closer inspection"
+    attribution=""
+    caption="Output From Pix2Pix Reverse Segmenter"
+%}
+]
+
+
+---
+# Can Condition On Other Conditions!
+
+{% include chart
+chart='
+flowchart LR
+    cls[Class Label] --> Generator
+    Generator --> gen[Generated Image]
+    gen --Test--> Discriminator
+    gen --Test--> Classifier
+    Classifier --Conditional Loss--> Generator
+    Discriminator --Perceptual Loss--> Generator
+    cls --> Classifier
+'
+caption="cGAN Generating Given Class"
+%}
+
+---
+# What If You Just Want Cool Images?
+
+- Don't have any particular condition
+- Can just run generator
+- No variation, will generate same thing every time
+- Need source of randomness
+
+{% include chart
+chart='
+flowchart LR
+    Generator --> gen[Generated Image]
+    gen --Test--> Discriminator
+    Discriminator --Perceptual Loss--> Generator
+'
+caption="Boring GAN"
+%}
+
+
+---
+# Deep Convolutional GANs
+
+- Input random vector
+- Generator generates based off the vector
+- Allows for variation which makes output more interesting and helps fool the discriminator!
+
+{% include chart
+chart='
+flowchart LR
+    Random --> Generator
+    Generator --> gen[Generated Image]
+    gen --Test--> Discriminator
+    Discriminator --Perceptual Loss--> Generator
+'
+caption="DCGAN"
+%}
+
+Problems:
+.small[
+.col50[
+- Discriminator has easier task
+    - Classification is easier
+    - Generation is hard
+    - Gradients can vanish (no small change to image will affect classification, can't make it realistic)
+    - Solution: train discriminator less often or otherwise inhibit training
+]
+.col50[
+- Mode collapse
+    - Generator finds 1 (or a few) outputs that "fool" discriminator
+    - Variation shrinks, only outputs a few different images
+    - Discriminator "chases" it in circles
+    - Solution:
+        - Often caused by above problem, need to fix that
+        - Good initialization is important
+        - Coarse to fine training
+]
+]
+
+
+---
+# Progressive Growing of GANs
+
+.center[
+![four images showing the progressive learning of gans training progress. First is output at 4x4 resolution, just looks like 16 skin-tone pixels. Next is 16x16 resolution, looks like a very grainy face. Both of these are at training time 0 days. Next is after 2 days training at 64x64 resolution, looks like a slightly blurry face. Last is 14 days training at final 1024x1024 resolution, looks like a very realistic face](../figs/proganall.png)
+]
+
+.footnote[https://arxiv.org/pdf/1710.10196.pdf]
+---
+# Progressive Growing of GANs
+
+.center[
+![A gif showing each stage of progressive gan training from 4x4 to 1024x1024 output image size.](../figs/progan.gif)
+]
+
+.footnote[https://arxiv.org/pdf/1710.10196.pdf]
+
+---
+
+# Style GAN
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/kSLJriaOumA" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+.footnote[https://arxiv.org/pdf/1812.04948.pdf]
+
+
+---
+
+# CycleGAN
+
+Sometimes you want to convert one image to another (e.g. take daytime image and produce nighttime image, or take natural image and turn into cartoon). However, getting perfect paired training data for pix2pix model would be impossible.
+
+CycleGAN time! Like conditional GAN but no "ground truth" condition. Instead, we want to train a forward transformation and the inverse and we want the round trip to be close to the original input.
+
+- Gather a bunch of images of each class, say horses and zebras
+- Two transformation functions, `\(Z: \text{horse} \to \text{zebra}\)`, `\(H: \text{zebra} \to \text{horse}\)`
+- Still have discriminator loss, for each class. Minimize:
+    - `\(D_\text{horse}[x_\text{horse}, H(x_\text{zebra})]\)`
+    - `\(D_\text{zebra}[x_\text{zebra}, Z(x_\text{horse})]\)`
+- Also want to minimize round trip loss:
+    - `\(dist[x_\text{horse}, H(Z(x_\text{horse}))]\)`
+    - `\(dist[x_\text{zebra}, Z(H(x_\text{zebra}))]\)`
+
+
+.footnote[https://arxiv.org/pdf/1703.10593.pdf]
+
+
+---
+
+# CycleGAN
+
+.height250[
+{% include chart
+chart='
+flowchart TB
+    subgraph Horse
+        h["\(x_\text{horse}\)"]
+        hz["\(H(x_\text{zebra})\)"]
+        hzh["\(H(Z(x_\text{horse}))\)"]
+    end
+    subgraph Zebra
+        z["\(x_\text{zebra}\)"]
+        zh["\(Z(x_\text{horse})\)"]
+        zhz["\(Z(H(x_\text{zebra}))\)"]
+    end
+    h --Z--> zh
+    z --H--> hz
+    zh --H--> hzh
+    hz --Z--> zhz
+    h <--"\(D_\text{horse}\)" -->hz
+    z <--"\(D_\text{zebra}\)" -->zh
+    h <--"round-trip similarity"-->hzh
+    zhz <--"round-trip similarity"-->z
+'
+caption="DCGAN"
+%}
+]
+
+Train:
+- `\(Z\)`: generator for zebras
+- `\(H\)`: generator for horses
+- `\(D_z\)`: discriminator for zebras
+- `\(D_h\)`: discriminator for horses
+
+.footnote[https://arxiv.org/pdf/1703.10593.pdf]
+
+
+---
+# CycleGAN
+
+![example horse to zebra transformation](../figs/horse2zebra.png)
+![example bear to panda transformation](../figs/bear2panda.png)
+
+---
+# CycleGAN
+
+![Collection of results from CycleGAN including Monet paintings back and forth to natural images, zebras to horses, summer to winter, and photographs to various panters (Monet, VanGogh, Cezanne, Ukiyo-e)](../figs/cyclegan.jpg)
+
+---
+# CycleGAN
+
+![CycleGAN results on image segmentation for cityscapes dataset, results look fairly good, some noise](../figs/cycleseg.png)
+
+.footnote[https://arxiv.org/pdf/1908.11569.pdf]
+
+---
+# GAN Takeaways
+
+- Learn the model AND the loss function!
+- Can take advantage of unlabelled, very weakly labelled data
+- Solve many problems (e.g. semantic segmentation) without even paired examples
+- VERY finicky to train and keep stable
+- Constant fight between generator and discriminator, discriminator usually wins
+
