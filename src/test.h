@@ -9,4 +9,7 @@ extern int tests_fail;
     ++tests_fail; }else{fprintf(stderr, "passed: [%s] testing [%s] in %s, line %d\n", __FUNCTION__, #EX, __FILE__, __LINE__);}} while (0)
 
 void run_tests();
+void run_hw0_tests();
+void run_hw1_tests();
+void run_hw2_tests();
 #endif

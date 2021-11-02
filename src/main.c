@@ -73,7 +73,18 @@ int main(int argc, char **argv)
     } else if (0 == strcmp(argv[1], "tryhw1")){
         try_hw1();
     } else if (0 == strcmp(argv[1], "test")){
-        run_tests();
+        if (argc > 2){
+            if (0 == strcmp(argv[2], "hw0")){
+                run_hw0_tests();
+            } else if (0 == strcmp(argv[2], "hw1")){
+                run_hw1_tests();
+            } else if (0 == strcmp(argv[2], "hw2")){
+                run_hw2_tests();
+            }
+        } else {
+            run_tests();
+        }
+        printf("%d tests, %d passed, %d failed\n", tests_total, tests_total-tests_fail, tests_fail);
     }
     return 0;
 }

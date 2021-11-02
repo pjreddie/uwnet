@@ -9,6 +9,7 @@
 #include "image.h"
 #include "test.h"
 #include "args.h"
+
 // Forward declare for tests
 matrix mean(matrix x, int groups);
 matrix variance(matrix x, matrix m, int groups);
@@ -587,20 +588,38 @@ void test_matrix_speed()
     printf("Transpose elapsed %lf sec\n", what_time_is_it_now() - start);
 }
 
-void run_tests()
+void run_hw0_tests()
 {
-    //make_matrix_test();
     test_copy_matrix();
     test_axpy_matrix();
     test_transpose_matrix();
     test_matmul();
     test_activation_layer();
     test_connected_layer();
+}
+
+void run_hw1_tests()
+{
     test_im2col();
     test_col2im();
     test_maxpool_layer();
-    test_batchnorm_layer();
+}
 
-    printf("%d tests, %d passed, %d failed\n", tests_total, tests_total-tests_fail, tests_fail);
+void run_hw2_tests()
+{
+    test_batchnorm_layer();
+}
+
+void run_tests()
+{
+    run_hw0_tests();
+    run_hw1_tests();
+    run_hw2_tests();
+}
+
+void make_tests()
+{
+    // Don't run this function, it generates the ground truth matrices to test code against
+    // make_matrix_test();
 }
 
