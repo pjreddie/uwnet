@@ -649,7 +649,6 @@ void run_hw2_tests()
 
 void run_tests()
 {
-    make_matrix_test();
     run_hw0_tests();
     run_hw1_tests();
     run_hw2_tests();
