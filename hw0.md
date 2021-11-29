@@ -100,8 +100,6 @@ To compute the output of the model we first will want to do a matrix multiplicat
 
 Then we'll want to add in our biases for that layer, stored under `l.b`. The function `forward_bias` may come in handy here!
 
-Finally, we'll want to activate the output with the activation function for that layer.
-
 ### 3.2 `backward_connected_layer` ###
 
 This is the trickiest one probably.
