@@ -1,0 +1,213 @@
+---
+layout: slides
+title: Practical Deep Learning - Tensors
+permalink: /slides/tensors
+---
+background-image: url('../figs/title.png')
+
+---
+class: center, middle
+
+# Tensors
+
+
+---
+
+# Numbers...
+
+\\(  5 \\)
+
+---
+
+# Vectors...
+
+\\(  5 \\)
+
+\\(  [1, 1, 2, 3, 5] \\)
+
+---
+
+# Matrices...
+
+\\(  5 \\)
+
+\\(  [1, 1, 2, 3, 5] \\)
+
+\\(\begin{bmatrix}
+9 & 8 & 1 \\\
+0 & 7 & 7
+\end{bmatrix}\\)
+
+---
+
+# These are all tensors!
+
+\\(  5 \\)
+
+\\(  [1, 1, 2, 3, 5] \\)
+
+\\(\begin{bmatrix}
+9 & 8 & 1 \\\
+0 & 7 & 7
+\end{bmatrix}\\)
+
+---
+
+# A matrix is a 2-dimensional tensor
+
+.col50[
+\\(\begin{bmatrix}
+9 & 8 & 1 \\\
+0 & 7 & 7
+\end{bmatrix}\\)
+]
+.col50[
+Dimensionality = \\(2\\), Size = \\((2,3)\\)
+]
+
+---
+
+# A vector is a 1-dimensional tensor
+
+.col50[
+\\(  [1, 1, 2, 3, 5] \\)
+]
+.col50[
+Dimensionality = \\(1\\), Size = \\((5)\\)
+]
+
+---
+
+# A number is a 0-dimensional tensor
+
+.col50[
+\\(  5 \\)
+]
+.col50[
+Dimensionality = \\(0\\), Size = \\(1\\)
+]
+
+---
+
+# These are familiar tensors
+
+.col50[
+\\(  5 \\)
+
+\\(  [1, 1, 2, 3, 5] \\)
+
+\\(\begin{bmatrix}
+9 & 8 & 1 \\\
+0 & 7 & 7
+\end{bmatrix}\\)
+]
+.col50[
+Dimensionality = \\(0\\), Size = \\(1\\)
+
+Dimensionality = \\(1\\), Size = \\((5)\\)
+
+Dimensionality = \\(2\\), Size = \\((2,3)\\)
+]
+
+---
+
+# But tensors can have more dimensions too...
+
+.col50[
+\\(
+\left[ \begin{align}
+\begin{bmatrix}
+255 & 255 & 255 \\\
+255 & 0 & 0
+\end{bmatrix} \\\
+\begin{bmatrix}
+0 & 128 & 255 \\\
+0 & 0 & 255
+\end{bmatrix} \\\
+\begin{bmatrix}
+0 & 0 & 0 \\\
+255 & 255 & 0
+\end{bmatrix}
+\end{align}
+\right]
+\\)
+]
+.col50[
+Dimensionality = \\(4\\), Size = \\(3,2,3\\)
+]
+
+---
+
+# We can interpret this tensor as an image
+
+.col50[
+\\(
+\left[ \begin{align}
+\begin{bmatrix}
+255 & 255 & 255 \\\
+255 & 0 & 0
+\end{bmatrix} \\\
+\begin{bmatrix}
+0 & 128 & 255 \\\
+0 & 0 & 255
+\end{bmatrix} \\\
+\begin{bmatrix}
+0 & 0 & 0 \\\
+255 & 255 & 0
+\end{bmatrix}
+\end{align}
+\right]
+\\)
+
+![A 3x2 image of with pixels the color of red, orange, yellow, magenta, blue, and green](../figs/6rainbow.png)
+
+]
+.col50[
+Dimensionality = \\(4\\), Size = \\(3,2,3\\)
+
+The first dimension is channels (red, green, and blue)
+
+The second dimension is height
+
+The third dimension is width
+
+This is referred to as CHW format
+
+]
+
+---
+
+# Tensors are handy for deep learning
+
+In machine learning sometimes we process one example but usually we process multiple data points at a time. If we want to process a *batch* of images, each image is a tensor, say:
+
+    $$3 \times 128 \times 256 $$
+
+If this image is in CHW format this would be a 256 width, 128 height, RGB image.
+
+But in our batch say we have 64 images, then our whole batch is itself a tensor of size:
+
+$$ 64 \times 3 \times 128 \times 256 $$
+
+This is referred to as NCHW format (the most common for storing images in tensors for deep learning)
+
+This is a 4 dimensional tensor used for batches of images. If you were processing video you might want a 5 dimensional tensor! Yay tensors
+
+
+---
+
+# How do we use tensors?
+
+Tensors are common data structures in the big neural network frameworks.
+
+Right now there are 2 main frameworks out there, PyTorch and Tensorflow.
+
+PyTorch is developed at Facebook (mostly) and used for a lot of research code and fun projects you'll find online.
+
+Tensorflow is developed at Google (mostly) and is kind of a mess but it can run on TPUs (Google's special purpose deep learning hardware) so it's useful for that.
+
+We'll be playing around with PyTorch in class, but on Google hardware, ha!
+
+[https://colab.research.google.com/](https://colab.research.google.com/)
+
+

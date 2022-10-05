@@ -1,0 +1,391 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Practical Deep Learning - Tensors</title>
+    <style>
+        foreignObject {overflow:visible}
+        img {max-width:100%;
+        vertical-align:middle;}
+
+    </style>
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script src="https://www.desmos.com/api/v1.5/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+  </head>
+  <body>
+            <style>
+        table, th, td{
+            border: 1px solid black;
+            border-collapse:collapse;
+            text-align:center;
+        }
+        th{
+            padding:.2em 1em;
+        }
+        td{
+            padding:.2em .2em;
+        }
+        img{
+            max-height:500px;
+        }
+        figure{
+            padding:.5em;
+            border:1px solid black;
+            position:relative
+        }
+        figcaption{
+            position: absolute;
+            left:.5em;
+            top: -.9em;
+            border: 1px solid black;
+            padding:0em .2em;
+            background-color:white;
+        }
+
+        .remark-code{
+            font-size:inherit;
+        }
+        .remark-slide-number{
+            bottom:20px;
+            right:36px;
+            font-size:18px;
+        }
+        .footnote{
+            border:4px solid black;
+            position:absolute;
+            left:35px;
+            bottom:2px;
+            font-size:18px;
+            background-color:#fff;
+            padding:.2em;
+        }
+        .remark-slide-content{
+            background-image:url('../figs/bg.png');
+            background-position:top left;
+            background-size: contain;
+            padding:1em 2em 1em 2em;
+            overflow:hidden;
+            font-size:24px;
+        }
+        h1 {
+            margin-block-start: .1em;
+        }
+        img {
+            max-width:100%;
+            vertical-align:middle;
+        }
+        ul {
+            margin-block-start:0em;
+        }
+        /*figure {max-width:100%}*/
+        .small {font-size:18px}
+        .big {font-size:32px;}
+        /*.mermaidsvg {max-width:40%;}*/
+        .remark-slide-content figure{
+            margin:0;
+        }
+
+        .col30{float:left; width:30%}
+        .col40{float:left; width:40%}
+        .col50{float:left; width:50%}
+        .col60{float:left; width:60%}
+        .col70{float:left; width:70%}
+        .clear{clear:both;}
+        .height100 img,.height100 svg{height:100px;}
+        .height200 img,.height200 svg{height:200px;}
+        .height250 img,.height250 svg{height:250px;}
+        .height300 img,.height300 svg{height:300px;}
+        .height400 img,.height400 svg{height:400px;}
+        .height450 img,.height450 svg{height:450px;}
+        .height480 img,.height480 svg{height:480px;}
+        .height500 img,.height500 svg{height:500px;}
+        .box{
+            position:relative;
+            border:4px solid black;
+            padding:.2em;
+        }
+        .box .title{
+            position: absolute;
+            left:.5em;
+            top: -.9em;
+            border: 4px solid black;
+            padding:0em .2em;
+            background-color:white;
+        }
+</style>
+
+<textarea id="source">
+background-image: url('../figs/title.png')
+
+---
+class: center, middle
+
+# Tensors
+
+
+---
+
+# Numbers...
+
+\\(  5 \\)
+
+---
+
+# Vectors...
+
+\\(  5 \\)
+
+\\(  [1, 1, 2, 3, 5] \\)
+
+---
+
+# Matrices...
+
+\\(  5 \\)
+
+\\(  [1, 1, 2, 3, 5] \\)
+
+\\(\begin{bmatrix}
+9 & 8 & 1 \\\
+0 & 7 & 7
+\end{bmatrix}\\)
+
+---
+
+# These are all tensors!
+
+\\(  5 \\)
+
+\\(  [1, 1, 2, 3, 5] \\)
+
+\\(\begin{bmatrix}
+9 & 8 & 1 \\\
+0 & 7 & 7
+\end{bmatrix}\\)
+
+---
+
+# A matrix is a 2-dimensional tensor
+
+.col50[
+\\(\begin{bmatrix}
+9 & 8 & 1 \\\
+0 & 7 & 7
+\end{bmatrix}\\)
+]
+.col50[
+Dimensionality = \\(2\\), Size = \\((2,3)\\)
+]
+
+---
+
+# A vector is a 1-dimensional tensor
+
+.col50[
+\\(  [1, 1, 2, 3, 5] \\)
+]
+.col50[
+Dimensionality = \\(1\\), Size = \\((5)\\)
+]
+
+---
+
+# A number is a 0-dimensional tensor
+
+.col50[
+\\(  5 \\)
+]
+.col50[
+Dimensionality = \\(0\\), Size = \\(1\\)
+]
+
+---
+
+# These are familiar tensors
+
+.col50[
+\\(  5 \\)
+
+\\(  [1, 1, 2, 3, 5] \\)
+
+\\(\begin{bmatrix}
+9 & 8 & 1 \\\
+0 & 7 & 7
+\end{bmatrix}\\)
+]
+.col50[
+Dimensionality = \\(0\\), Size = \\(1\\)
+
+Dimensionality = \\(1\\), Size = \\((5)\\)
+
+Dimensionality = \\(2\\), Size = \\((2,3)\\)
+]
+
+---
+
+# But tensors can have more dimensions too...
+
+.col50[
+\\(
+\left[ \begin{align}
+\begin{bmatrix}
+255 & 255 & 255 \\\
+255 & 0 & 0
+\end{bmatrix} \\\
+\begin{bmatrix}
+0 & 128 & 255 \\\
+0 & 0 & 255
+\end{bmatrix} \\\
+\begin{bmatrix}
+0 & 0 & 0 \\\
+255 & 255 & 0
+\end{bmatrix}
+\end{align}
+\right]
+\\)
+]
+.col50[
+Dimensionality = \\(4\\), Size = \\(3,2,3\\)
+]
+
+---
+
+# We can interpret this tensor as an image
+
+.col50[
+\\(
+\left[ \begin{align}
+\begin{bmatrix}
+255 & 255 & 255 \\\
+255 & 0 & 0
+\end{bmatrix} \\\
+\begin{bmatrix}
+0 & 128 & 255 \\\
+0 & 0 & 255
+\end{bmatrix} \\\
+\begin{bmatrix}
+0 & 0 & 0 \\\
+255 & 255 & 0
+\end{bmatrix}
+\end{align}
+\right]
+\\)
+
+![A 3x2 image of with pixels the color of red, orange, yellow, magenta, blue, and green](../figs/6rainbow.png)
+
+]
+.col50[
+Dimensionality = \\(4\\), Size = \\(3,2,3\\)
+
+The first dimension is channels (red, green, and blue)
+
+The second dimension is height
+
+The third dimension is width
+
+This is referred to as CHW format
+
+]
+
+---
+
+# Tensors are handy for deep learning
+
+In machine learning sometimes we process one example but usually we process multiple data points at a time. If we want to process a *batch* of images, each image is a tensor, say:
+
+    $$3 \times 128 \times 256 $$
+
+If this image is in CHW format this would be a 256 width, 128 height, RGB image.
+
+But in our batch say we have 64 images, then our whole batch is itself a tensor of size:
+
+$$ 64 \times 3 \times 128 \times 256 $$
+
+This is referred to as NCHW format (the most common for storing images in tensors for deep learning)
+
+This is a 4 dimensional tensor used for batches of images. If you were processing video you might want a 5 dimensional tensor! Yay tensors
+
+
+---
+
+# How do we use tensors?
+
+Tensors are common data structures in the big neural network frameworks.
+
+Right now there are 2 main frameworks out there, PyTorch and Tensorflow.
+
+PyTorch is developed at Facebook (mostly) and used for a lot of research code and fun projects you'll find online.
+
+Tensorflow is developed at Google (mostly) and is kind of a mess but it can run on TPUs (Google's special purpose deep learning hardware) so it's useful for that.
+
+We'll be playing around with PyTorch in class, but on Google hardware, ha!
+
+[https://colab.research.google.com/](https://colab.research.google.com/)
+
+
+
+</textarea>
+
+<script>
+    MathJax = {
+        skipStartupTypeset: true,
+        tex: {
+            macros: {
+                d: "{\\nabla}",
+                t: "\\tilde",
+                x: "{\\times}",
+            }
+        },
+        options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'annotation', 'annotation-xml']
+        },
+    };
+</script>
+<script type="text/javascript" id="MathJax-script" async
+  src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'>
+</script>
+
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>
+window.onload = function(){
+
+    mermaid.initialize({
+        startOnLoad:false,
+        cloneCssStyles: false,
+        flowchart:{
+            //useMaxWidth:false,
+            curve:'basis',
+            htmlLabels:true,
+        },
+        theme: 'default',
+        themeVariables:{
+            edgeLabelBackground:'#fff',
+        },
+    });
+
+
+    var slideshow = remark.create({
+        ratio: '16:9',
+        navigation: {scroll: false,},
+    });
+
+    function initSlide() {
+        var diagrams = document.querySelectorAll('.remark-visible .mermaid');
+        for(var diagram of diagrams){
+            mermaid.init(undefined, diagram);
+        }
+        var slide = document.querySelectorAll('.remark-visible');
+        MathJax.typeset(slide);
+    }
+    slideshow.on('afterShowSlide', initSlide);
+    initSlide();
+};
+
+</script>
+
+
+  </body>
+</html>
