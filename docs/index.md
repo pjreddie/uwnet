@@ -16,3 +16,7 @@ title: Index
 - [Chapter 12 - Optimization Tips and Tricks](slides/12.html)
 - [Chapter 13 - Generative Adversarial Networks](slides/13.html)
 
+## Modules
+
+- [Tensors](slides/tensors.html)
+
