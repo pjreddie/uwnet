@@ -288,23 +288,13 @@ void test_convolutional_layer()
 
 void test_maxpool_layer()
 {
-    image im = load_image("data/test/dog.jpg"); 
+    matrix x = load_matrix("data/test/max_x.matrix");
 
-    matrix im_mat = {0};
-    im_mat.rows = 1;
-    im_mat.cols = im.w*im.h*im.c;
-    im_mat.data = im.data;
+    layer max_l = make_maxpool_layer(64, 32, 16, 2, 2);
+    layer max_l3 = make_maxpool_layer(64, 32, 16, 3, 2);
 
-    matrix im_mat3 = {0};
-    im_mat3.rows = 1;
-    im_mat3.cols = im.w*im.h*im.c;
-    im_mat3.data = im.data;
-
-    layer max_l = make_maxpool_layer(im.w, im.h, im.c, 2, 2);
-    layer max_l3 = make_maxpool_layer(im.w, im.h, im.c, 3, 2);
-
-    matrix max_y = max_l.forward(max_l, im_mat);
-    matrix max_y3 = max_l3.forward(max_l3, im_mat3);
+    matrix max_y = max_l.forward(max_l, x);
+    matrix max_y3 = max_l3.forward(max_l3, x);
 
     matrix truth_max_y = load_matrix("data/test/max_y.matrix");
     matrix truth_max_y3 = load_matrix("data/test/max_y3.matrix");
@@ -335,9 +325,9 @@ void test_maxpool_layer()
     free_matrix(max_dy3);
     free_matrix(truth_max_dx);
     free_matrix(truth_max_dx3);
-    free_image(im);
     free_layer(max_l);
     free_layer(max_l3);
+    free_matrix(x);
 }
 
 void test_batchnorm_layer()
@@ -489,46 +479,54 @@ void make_matrix_test()
     save_matrix(l.w, "data/test/updated_w.matrix");
     save_matrix(l.b, "data/test/updated_b.matrix");
 
-    // Maxpool Layer Tests
+    {
+        // Maxpool Layer Tests
 
-    image im = load_image("data/test/dog.jpg"); 
+        /*
+        image im = load_image("data/test/dog.jpg"); 
 
-    matrix im_mat = {0};
-    im_mat.rows = 1;
-    im_mat.cols = im.w*im.h*im.c;
-    im_mat.data = im.data;
+        matrix im_mat = make_matrix(5, im.w*im.h*im.c);
+        int i, j;
 
-    matrix im_mat3 = {0};
-    im_mat3.rows = 1;
-    im_mat3.cols = im.w*im.h*im.c;
-    im_mat3.data = im.data;
+        for(i = 0; i < 5; ++i){
+            for(j = 0; j < im.w*im.h*im.c; ++j){
+                im_mat.data[i*im.w*im.h*im.c + j] = im.data[j] + .1*((float)rand()/RAND_MAX);
+            }
+        }
 
-    layer max_l = make_maxpool_layer(im.w, im.h, im.c, 2, 2);
-    layer max_l3 = make_maxpool_layer(im.w, im.h, im.c, 3, 2);
+        matrix im_mat3 = copy_matrix(im_mat);
+        */
 
-    matrix max_y = max_l.forward(max_l, im_mat);
-    matrix max_y3 = max_l3.forward(max_l3, im_mat3);
 
-    save_matrix(max_y, "data/test/max_y.matrix");
-    save_matrix(max_y3, "data/test/max_y3.matrix");
+        matrix x = random_matrix(10, 64*32*16, 1);
+        layer max_l =  make_maxpool_layer(64, 32, 16, 2, 2);
+        layer max_l3 = make_maxpool_layer(64, 32, 16, 3, 2);
 
-    matrix max_dy = random_matrix(max_y.rows, max_y.cols, 10);
-    matrix max_dy3 = random_matrix(max_y3.rows, max_y3.cols, 10);
+        matrix max_y = max_l.forward(max_l, x);
+        matrix max_y3 = max_l3.forward(max_l3, x);
 
-    save_matrix(max_dy, "data/test/max_dy.matrix");
-    save_matrix(max_dy3, "data/test/max_dy3.matrix");
+        save_matrix(max_y, "data/test/max_y.matrix");
+        save_matrix(max_y3, "data/test/max_y3.matrix");
 
-    matrix max_dx = max_l.backward(max_l, max_dy);
-    matrix max_dx3 = max_l3.backward(max_l3, max_dy3);
+        matrix max_dy = random_matrix(max_y.rows, max_y.cols, 10);
+        matrix max_dy3 = random_matrix(max_y3.rows, max_y3.cols, 10);
 
-    save_matrix(max_dx, "data/test/max_dx.matrix");
-    save_matrix(max_dx3, "data/test/max_dx3.matrix");
+        save_matrix(max_dy, "data/test/max_dy.matrix");
+        save_matrix(max_dy3, "data/test/max_dy3.matrix");
+
+        matrix max_dx = max_l.backward(max_l, max_dy);
+        matrix max_dx3 = max_l3.backward(max_l3, max_dy3);
+
+        save_matrix(max_dx, "data/test/max_dx.matrix");
+        save_matrix(max_dx3, "data/test/max_dx3.matrix");
+        save_matrix(x, "data/test/max_x.matrix");
+    }
 
 
 
     // im2col tests
 
-    //image im = load_image("data/test/dog.jpg"); 
+    image im = load_image("data/test/dog.jpg"); 
     matrix col = im2col(im, 3, 2);
     matrix col2 = im2col(im, 2, 2);
     save_matrix(col, "data/test/im2col.matrix");
@@ -647,11 +645,40 @@ void run_hw2_tests()
     test_batchnorm_layer();
 }
 
+void time_stuff()
+{
+    int n = 100;
+    int s = 512;
+    matrix a = random_matrix(s, s, 1);
+    matrix b = random_matrix(s, s, 1);
+    int i;
+    double start = what_time_is_it_now();
+    for(i = 0; i < n; ++i){
+        matrix c = copy_matrix(b);
+        axpy_matrix(1, a, c);
+        free_matrix(c);
+    }
+    double end = what_time_is_it_now();
+    printf("took %f sec\n", end - start);
+    printf("%g sec/op\n", (end-start)/n/(s*s));
+
+    start = what_time_is_it_now();
+    for(i = 0; i < n; ++i){
+        matrix c = matmul(a, b);
+        free_matrix(c);
+    }
+    end = what_time_is_it_now();
+    printf("took %f sec\n", end - start);
+    printf("%g sec/op\n", (end-start)/n/(s*s*s));
+}
+
 void run_tests()
 {
     run_hw0_tests();
     run_hw1_tests();
     run_hw2_tests();
+    //time_stuff();
+
 }
 
 void make_tests()
